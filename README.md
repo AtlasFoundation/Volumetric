@@ -17,3 +17,6 @@ node ./src/Encoder.js example.drcs 25 0 499
 Input is a series of .crt files in a folder called "assets"
 You can encode these with the corto executable
 "assets" folder must be in the same working directory we are calling this script from
+
+## Maintainers Wanted
+If you are interested in open source volumetric encoding and playback, email me at shawmakesmagic@gmail.com :)
