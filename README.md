@@ -1,5 +1,7 @@
 # volumetric
 
+NOTE: This project is in development. Everything works, but the encoding strategy isn't self-contained yet. If you are interested in encoding volumetric and I haven't already done so, make a Github issue or contact me and I will make the new encoder public.
+
 An open source format for streaming meshes and volumetric playback with extremely fast encode + decode.
 
 Currently playback works in WebGL with three.js
