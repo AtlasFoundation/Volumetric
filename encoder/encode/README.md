@@ -1,0 +1,1 @@
+Place files you want to encode here. PNG files only. If you want to support JPEG or change the encode path, edit the python script.

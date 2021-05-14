@@ -1,10 +1,12 @@
-current_frame = 88
+# importing cv2 
+import cv2
+  
+# importing os module  
+import os
 
-#current keframe raw binary string
-bin_ = '{0:016b}'.format(current_frame)
-print(bin_)
+dirname = os.path.dirname(__file__)
 
-
+encoderWindowSize = 8;
 
 #======================================================================================================================
 #--------------------------------------------- MAIN Function ----------------------------------------------------------
@@ -20,22 +22,44 @@ def main():
     # Exception Handling : If 'encode' folder is not there, create one
     assert os.path.exists(Data_Path), 'The Dataset Folder not found. Please consider giving full(absolute) file path.'
 
+    print("Main")
     for files in os.listdir(Data_Path):
         if files.endswith(".png"): # Exception Handling
-                textures_in_group.append(files)
+                textures_in_group.append(Data_Path+"/"+files)
                 print("Adding texture " +  str(frame_number+1) + " to group")
                 frame_number = frame_number + 1
 
     for current_texture in range(len(textures_in_group)):
+        print("Current texture is")
+        print(textures_in_group[current_texture])
         # Read image
+        img = cv2.imread(textures_in_group[current_texture])
+        print(img)
+        height, width, channels = img.shape
+        print("Width is")
+        print(width)
+        print("Height is")
+        print(height)
         # Draw test into corner
         # Read binary from frame number
-        for value in '{0:016b}'.format(current_texture):
-            # if value is '0', draw a black square
-            # if value is '1', draw a white square
+        for index, value in enumerate('{0:016b}'.format(current_texture)):
+            color = (0,0,0)
+            if(value == '1'):
+                color = (255,255,255)
+            print("Painting color at")
+            print(color)
+            print(height-1-encoderWindowSize)
+            cv2.rectangle(img,(index*encoderWindowSize, height-1-encoderWindowSize),((index+1)*encoderWindowSize,height-1),color,-1)
+        
         # save the image
+        cv2.imwrite(textures_in_group[current_texture], img)
+
 
     print("Finished adding binary frame counter to textures");
     print("Make sure this isn't bleeding into your textures. You might need to scale your UVs to keep square texture.")
     print("We'll add UV autoscaling and appending later.")
 #======================================================================================================================
+
+
+if __name__ == '__main__':
+    main()
