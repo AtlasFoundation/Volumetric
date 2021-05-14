@@ -30,17 +30,9 @@ def main():
                 frame_number = frame_number + 1
 
     for current_texture in range(len(textures_in_group)):
-        print("Current texture is")
-        print(textures_in_group[current_texture])
         # Read image
-        img = cv2.imread(textures_in_group[current_texture])
         print(img)
         height, width, channels = img.shape
-        print("Width is")
-        print(width)
-        print("Height is")
-        print(height)
-        # Draw test into corner
         # Read binary from frame number
         for index, value in enumerate('{0:016b}'.format(current_texture)):
             color = (0,0,0)
@@ -54,12 +46,10 @@ def main():
         # save the image
         cv2.imwrite(textures_in_group[current_texture], img)
 
-
     print("Finished adding binary frame counter to textures");
     print("Make sure this isn't bleeding into your textures. You might need to scale your UVs to keep square texture.")
     print("We'll add UV autoscaling and appending later.")
 #======================================================================================================================
-
 
 if __name__ == '__main__':
     main()
