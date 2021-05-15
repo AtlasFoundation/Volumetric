@@ -1,6 +1,13 @@
 # Universal Volumetric
 
-An open source .uvol format for streaming meshes and volumetric playback with extremely fast encode + decode.
+The open source Universal Volumetric (".uvol") compressed interchange format for streaming mesh sequences. This project also includes a cross-platform player implementation using h.264 video for texture.
+
+The initial version focuses on performance. Currently, single material mesh sequences of any length are supported. The next version will focus on higher compression ratio, streamability and integration into USD and glTF.
+
+The current implementation uses the MIT-licensed Corto codec from CNR-ISTI Visual Computing Group, which has fast compression and especially fast decompression characteristics.
+
+### Collaborators Wanted!
+If you are proficient in C++, python, JS, Unity/C#, or you want to support this project creatively or financially, please get in touch!
 
 ### Example
 This tech was built in partnership with Wild Capture and others. You can see an example on Wild Capture's site, here: http://wildcapture.co/volumetric.html
@@ -20,7 +27,7 @@ Encoded .uvol files are cross platform, but currently the decoder is written for
 https://opencollective.com/xrengine
 
 Or you can get in touch with the maintainer directly for any questions about who, what, where and how:
-shawmakesmusic@gmail.com
+shawmakesmagic@gmail.com
 
 Or find us on Discord!
 https://discord.gg/2amVGBE3a3
