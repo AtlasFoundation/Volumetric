@@ -1,25 +1,23 @@
-// DRACOSIS ENCODER
-// Written by Shaw for XR3ngine
-// MIT licensed
-
 // This encoder uses Corto for quantized mesh compression
 // https://github.com/cnr-isti-vclab/corto
 
 // Example:
-// node ./src/Encoder.js example.drcs
+// node ./src/Encoder.js example.uvol
 // Extended Example: 25 FPS, 500 frames
-// node ./src/Encoder.js example.drcs 25 0 499
+// node ./src/Encoder.js example.uvol 25 0 499
 
-// Input is a series of .crt files in a folder called "assets"
+// Input is a series of .crt files in a folder called "encode"
 // You can encode these with the corto executable
-// "assets" folder must be in the same working directory we are calling this script from
+// "encode" folder must be in the same working directory we are calling this script from
 
 import glob from 'glob';
 import fs from 'fs';
 import THREE from 'three';
-import "./libs/THREECORTOLoader.js"
-import CortoDecoder from './libs/cortodecoder.js';
+import "../libs/THREECORTOLoader.js"
+import CortoDecoder from '../libs/cortodecoder.js';
 import HttpRequest from 'xmlhttprequest';
+import shell from 'shelljs';
+import path from 'path';
 
 const { CORTOLoader } = THREE;
 
@@ -50,7 +48,7 @@ class CortosisFileCreator {
   constructor(
     frameIn,
     frameOut,
-    outputFileName,
+    outputFileName = "encode.uvol",
     frameRate,
     progressCallback
   ) {
@@ -70,7 +68,10 @@ class CortosisFileCreator {
       if (progressCallback) progressCallback(item, loaded, total);
     };
 
-    const dir = process.cwd() + '/' + 'assets/';
+    shell.exec(path.dirname(import.meta.url.replace('file://', '')) + '/prepare_meshes.sh');
+
+    const dir = path.dirname(import.meta.url.replace('file://', '')) + '/' + 'encode/';
+
     glob(dir + '*.crt', {}, (err, files) => {
       if (err) console.error(err);
       this._meshFiles = files;
@@ -92,8 +93,10 @@ class CortosisFileCreator {
 
       // Load CRT file
       let rawObjDataCRT = fs.readFileSync(this._meshFiles[i]);
+      console.log("rawObjDataCRT", rawObjDataCRT.buffer);
+      
       let rawCRTFrame = Buffer.from(rawObjDataCRT)
-      let decoder = new CortoDecoder(rawObjDataCRT.buffer);
+      let decoder = new CortoDecoder(rawObjDataCRT.buffer, 0, rawObjDataCRT.buffer.bytelength);
       let objData = decoder.decode();
 
       if (objData !== null) {
@@ -165,7 +168,7 @@ class CortosisFileCreator {
     // // Convert our file info into buffer and save to file stream
     const fileDataBuffer = Buffer.from(JSON.stringify(fileData), 'utf-8');
 
-    const manifestStream = fs.createWriteStream(fileName.replace('drcs', 'manifest'));
+    const manifestStream = fs.createWriteStream(fileName.replace('uvol', 'manifest'));
     manifestStream.write(fileDataBuffer, err => {
       if (err) console.log("ERROR", err);
     });

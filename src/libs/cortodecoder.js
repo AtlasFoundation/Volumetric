@@ -95,6 +95,8 @@ export default function CortoDecoder(data, byteOffset, byteLength) {
 CortoDecoder.prototype = {
 
 decode: function() {
+	console.log("decode")
+
 	var t = this;
 
 	t.last = new Uint32Array(t.nvert*3); //for parallelogram prediction
@@ -103,26 +105,9 @@ decode: function() {
 	for(var i in t.attributes)
 		t.attributes[i].init(t.nvert, t.nface);
 
-	if(t.nface == 0)
-		t.decodePointCloud();
-	else
-		t.decodeMesh();
+	t.decodeMesh();
 
 	return t.geometry;
-},
-
-decodePointCloud: function() {
-	var t = this;
-	t.index = new IndexAttr(t.nvert, t.nface, 0);
-	t.index.decodeGroups(t.stream);
-	t.geometry.groups = t.index.groups;
-	for(var i in t.attributes) {
-		var a = t.attributes[i];
-		a.decode(t.nvert, t.stream);
-		a.deltaDecode(t.nvert);
-		a.dequantize(t.nvert);
-		t.geometry[a.name] = a.buffer;
-	}
 },
 
 decodeMesh: function() {

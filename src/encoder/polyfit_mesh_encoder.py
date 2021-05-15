@@ -1,3 +1,7 @@
+# Polyfit mesh encoder
+# Takes a sequence of temporally coherent meshes (similar topology across groups of frames)
+# Creates deforming keyframe sequences and stores vertex deformation curve as vertex property in PLY
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -32,15 +36,13 @@ def main():
     vertex_count_in_last_ply = 0
     meshes_in_group = []
 
-    Data_Path = dirname + "/output_ply_face_uvs"
-    # Data_Path = dirname + "/encode"
+    Data_Path = dirname + "/encode"
 
     # Exception Handling : If 'encode' folder is not there, create one
     assert os.path.exists(Data_Path), 'The Dataset Folder not found. Please consider giving full(absolute) file path.'
 
     for files in os.listdir(Data_Path):
         if files.endswith(".ply"): # Exception Handling
-
             mesh = PlyData.read(Data_Path + '/' + files)
             print(len(mesh['vertex']['x']))
             

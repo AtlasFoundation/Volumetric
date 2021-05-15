@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
 
 	FILE *file = fopen(output.c_str(), "wb");
 	if(!file) {
-		cerr << "Couldl not open file: " << output << endl;
+		cerr << "Could not open file: " << output << endl;
 		return 1;
 	}
 	size_t count = encoder.stream.size();

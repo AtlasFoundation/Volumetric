@@ -1,3 +1,7 @@
+# Binary sequence texture encoder
+# Takes a sequence of PNG images
+# Adds a macro 
+
 # importing cv2 
 import cv2
   

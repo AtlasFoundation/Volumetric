@@ -159,7 +159,7 @@ export default class Player {
     this.scene = scene;
     this.renderer = renderer;
     this.meshFilePath = meshFilePath;
-    this.manifestFilePath = meshFilePath.replace('drcs', 'manifest');
+    this.manifestFilePath = meshFilePath.replace('uvol', 'manifest');
     this.loop = loop;
     this._scale = scale;
     this._video = video ?? createElement('video', {
