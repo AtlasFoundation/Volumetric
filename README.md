@@ -14,6 +14,17 @@ For encoding, you will need Node.js 12+ and Python 3 installed.
 
 For decoding, currently WebGL is supported (especially three.js), Unreal and Unity will come in the next release.
 
+You will need a mesh and texture sequence in OBJ/PNG or OBJ/PLY.
+
+Encoded .uvol files are cross platform, but currently the decoder is written for the web only. Want Unity, Unreal, examples in PlayCanvas and Babylon, etc? Submit and issue and sponsor our project:
+https://opencollective.com/xrengine
+
+Or you can get in touch with the maintainer directly for any questions about who, what, where and how:
+shawmakesmusic@gmail.com
+
+Or find us on Discord!
+https://discord.gg/2amVGBE3a3
+
 ## Encoding
 
 ### Mesh
