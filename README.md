@@ -1,6 +1,18 @@
 # Universal Volumetric
 
-An open source format for streaming meshes and volumetric playback with extremely fast encode + decode.
+The open source Universal Volumetric (".uvol") compressed interchange format for streaming mesh sequences. This project also includes a cross-platform player implementation using h.264 video for texture.
+
+The initial version focuses on performance. Currently, single material mesh sequences of any length are supported. The next version will focus on higher compression ratio, streamability and integration into USD and glTF.
+
+The current implementation uses the MIT-licensed Corto codec from CNR-ISTI Visual Computing Group, which has fast compression and especially fast decompression characteristics.
+
+### Collaborators Wanted!
+If you are proficient in C++, python, JS, Unity/C#, or you want to support this project creatively or financially, please get in touch!
+
+### Example
+This tech was built in partnership with Wild Capture and others. You can see an example on Wild Capture's site, here: http://wildcapture.co/volumetric.html
+
+Current uvol files consist of a .uvol binary, manifest file and video texture. Future versions will embed everything into the uvol binary or in a single MP4 container.
 
 Currently playback works in WebGL with three.js -- Unity and Unreal support are available and coming soon, get in touch if you're interested!
 
@@ -8,6 +20,17 @@ Currently playback works in WebGL with three.js -- Unity and Unreal support are 
 For encoding, you will need Node.js 12+ and Python 3 installed.
 
 For decoding, currently WebGL is supported (especially three.js), Unreal and Unity will come in the next release.
+
+You will need a mesh and texture sequence in OBJ/PNG or OBJ/PLY.
+
+Encoded .uvol files are cross platform, but currently the decoder is written for the web only. Want Unity, Unreal, examples in PlayCanvas and Babylon, etc? Submit and issue and sponsor our project:
+https://opencollective.com/xrengine
+
+Or you can get in touch with the maintainer directly for any questions about who, what, where and how:
+shawmakesmagic@gmail.com
+
+Or find us on Discord!
+https://discord.gg/2amVGBE3a3
 
 ## Encoding
 
