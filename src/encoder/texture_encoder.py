@@ -8,43 +8,43 @@ import cv2
 # importing os module  
 import os
 
-dirname = os.path.dirname(__file__)
 
-encoderWindowSize = 8;
 
 #======================================================================================================================
 #--------------------------------------------- MAIN Function ----------------------------------------------------------
 #======================================================================================================================
 
 def main():
+    dirname = os.path.dirname(os.path.realpath(__file__))
+
+    print(dirname)
+    encoderWindowSize = 8;
     frame_number = 0
     textures_in_group = []
 
     # TODO: Add path to where you can to encode, default to this
     Data_Path = dirname + "/encode"
+    print(Data_Path)
 
     # Exception Handling : If 'encode' folder is not there, create one
     assert os.path.exists(Data_Path), 'The Dataset Folder not found. Please consider giving full(absolute) file path.'
 
-    print("Main")
     for files in os.listdir(Data_Path):
         if files.endswith(".png"): # Exception Handling
                 textures_in_group.append(Data_Path+"/"+files)
                 print("Adding texture " +  str(frame_number+1) + " to group")
                 frame_number = frame_number + 1
-
+    textures_in_group.sort()
     for current_texture in range(len(textures_in_group)):
+        img = cv2.imread(textures_in_group[current_texture])
         # Read image
-        print(img)
         height, width, channels = img.shape
         # Read binary from frame number
+        print(textures_in_group[current_texture] + " " + '{0:016b}'.format(current_texture))
         for index, value in enumerate('{0:016b}'.format(current_texture)):
             color = (0,0,0)
             if(value == '1'):
                 color = (255,255,255)
-            print("Painting color at")
-            print(color)
-            print(height-1-encoderWindowSize)
             cv2.rectangle(img,(index*encoderWindowSize, height-1-encoderWindowSize),((index+1)*encoderWindowSize,height-1),color,-1)
         
         # save the image
