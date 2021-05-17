@@ -45,7 +45,7 @@ def main():
             color = (0,0,0)
             if(value == '1'):
                 color = (255,255,255)
-            cv2.rectangle(img,(index*encoderWindowSize, height-1-encoderWindowSize),((index+1)*encoderWindowSize,height-1),color,-1)
+            cv2.rectangle(img,(15-index*encoderWindowSize, height-1-encoderWindowSize),((15-index+1)*encoderWindowSize,height-1),color,-1)
         
         # save the image
         cv2.imwrite(textures_in_group[current_texture], img)
