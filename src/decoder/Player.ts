@@ -111,6 +111,7 @@ export default class Player {
   constructor({
     scene,
     renderer,
+    manifestFilePath = null,
     meshFilePath,
     videoFilePath,
     targetFramesToRequest = 90,
@@ -123,10 +124,12 @@ export default class Player {
     video = null,
     onMeshBuffering = null,
     onFrameShow = null,
-    rendererCallback = null
+    rendererCallback = null,
+    worker = null
   }: {
     scene: Object3D,
     renderer: WebGLRenderer,
+    manifestFilePath?: string,
     meshFilePath: string,
     videoFilePath: string,
     targetFramesToRequest?: number,
@@ -140,7 +143,8 @@ export default class Player {
     videoSize?: number,
     onMeshBuffering?: onMeshBufferingCallback
     onFrameShow?: onFrameShowCallback,
-    rendererCallback?: onRenderingCallback
+    rendererCallback?: onRenderingCallback,
+    worker?: Worker
   }) {
 
     this.onMeshBuffering = onMeshBuffering;
@@ -153,13 +157,12 @@ export default class Player {
 
     this.targetFramesToRequest = targetFramesToRequest;
 
-    const worker = new Worker('./workerFunction.ts'); // spawn new worker
-    this._worker = worker;
+    this._worker = worker ?? (new Worker('./workerFunction.ts')); // spawn new worker;
 
     this.scene = scene;
     this.renderer = renderer;
     this.meshFilePath = meshFilePath;
-    this.manifestFilePath = meshFilePath.replace('uvol', 'manifest');
+    this.manifestFilePath = manifestFilePath ?? meshFilePath.replace('uvol', 'manifest');
     this.loop = loop;
     this._scale = scale;
     this._video = video ?? createElement('video', {
