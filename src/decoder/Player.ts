@@ -330,6 +330,10 @@ export default class Player {
     }
   }
 
+  get video():any {
+    return this._video;
+  }
+
   // Start loop to check if we're ready to play
   play() {
     this.hasPlayed = true;
