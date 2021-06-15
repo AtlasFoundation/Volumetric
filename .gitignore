@@ -138,7 +138,6 @@ _deps
 unity/.DS_Store
 .DS_Store
 
-unity/Assets/StreamingAssets
 unity/Library
 unity/Temp
 unity/Logs
