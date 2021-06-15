@@ -52,9 +52,10 @@ export default class Player {
   private counterCtx: CanvasRenderingContext2D;
   private actorCtx: CanvasRenderingContext2D;
 
-  private numberOfFrames: any;
+  private numberOfFrames: number;
+  private maxNumberOfFrames: number;
   private actorCanvas: HTMLCanvasElement;
-  currentFrame: number = 0;
+  currentFrame: number = -1;
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
 
@@ -91,7 +92,7 @@ export default class Player {
 
       if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame)) ||
         (!isOnLoop && key < this.currentFrame)) {
-          console.log("Destroying", key);
+        // console.log("Destroying", key);
         oldFrames.push(key);
       }
     })
@@ -109,24 +110,24 @@ export default class Player {
   hasPlayed: boolean;
 
   constructor({
-    scene,
-    renderer,
-    manifestFilePath = null,
-    meshFilePath,
-    videoFilePath,
-    targetFramesToRequest = 90,
-    frameRate = 30,
-    loop = true,
-    scale = 1,
-    encoderWindowSize = 8,
-    encoderByteLength = 16,
-    videoSize = 1024,
-    video = null,
-    onMeshBuffering = null,
-    onFrameShow = null,
-    rendererCallback = null,
-    worker = null
-  }: {
+                scene,
+                renderer,
+                manifestFilePath = null,
+                meshFilePath,
+                videoFilePath,
+                targetFramesToRequest = 90,
+                frameRate = 30,
+                loop = true,
+                scale = 1,
+                encoderWindowSize = 8,
+                encoderByteLength = 16,
+                videoSize = 1024,
+                video = null,
+                onMeshBuffering = null,
+                onFrameShow = null,
+                rendererCallback = null,
+                worker = null
+              }: {
     scene: Object3D,
     renderer: WebGLRenderer,
     manifestFilePath?: string,
@@ -153,6 +154,7 @@ export default class Player {
 
     this.encoderWindowSize = encoderWindowSize;
     this.encoderByteLength = encoderByteLength;
+    this.maxNumberOfFrames = Math.pow(2, this.encoderByteLength)-2;
     this.videoSize = videoSize;
 
     this.targetFramesToRequest = targetFramesToRequest;
@@ -168,6 +170,7 @@ export default class Player {
     this._video = video ?? createElement('video', {
       crossorigin: "",
       playsInline: "true",
+      preload: "auto",
       loop: true,
       src: videoFilePath,
       style: {
@@ -182,6 +185,7 @@ export default class Player {
     });
 
     this._video.setAttribute('crossorigin', '');
+    this._video.setAttribute('preload', 'auto');
 
     this.frameRate = frameRate;
 
@@ -239,10 +243,14 @@ export default class Player {
       switch (e.data.type) {
         case 'initialized':
           console.log("Worker initialized");
-          this.bufferLoop();
+          Promise.resolve().then(() => {
+            this.bufferLoop();
+          });
           break;
         case 'framedata':
-          handleFrameData(e.data.payload);
+          Promise.resolve().then(() => {
+            handleFrameData(e.data.payload);
+          });
           break;
       }
     };
@@ -255,6 +263,10 @@ export default class Player {
 
       // Get count of frames associated with keyframe
       this.numberOfFrames = this.fileHeader.frameData.length;
+
+      if (this.numberOfFrames > this.maxNumberOfFrames) {
+        console.error('There are more frames (%d) in file then our decoder can handle(%d) with provided encoderByteLength(%d)', this.numberOfFrames, this.maxNumberOfFrames, this.encoderByteLength);
+      }
 
       worker.postMessage({ type: "initialize", payload: { targetFramesToRequest, meshFilePath, numberOfFrames: this.numberOfFrames, fileHeader: this.fileHeader } }); // Send data to our worker.
     };
@@ -269,34 +281,29 @@ export default class Player {
    * @param cb
    */
   handleRender(cb?: onRenderingCallback) {
-    if (!this.fileHeader || this._video.currentTime === 0 || this._video.paused)
+    if (!this.fileHeader) // || (this._video.currentTime === 0 || this._video.paused))
       return;
 
-    this.actorCtx.clearRect(0, 0, this._video.width, this._video.height);
-    this.actorCtx.drawImage(this._video, 0, 0);
+    // TODO: handle paused state
+    this.processFrame(cb);
+  }
 
-    this.counterCtx.clearRect(0, 0, this._video.width, this._video.height);
+  /**
+   * sync mesh frame to video texture frame
+   * calls this.rendererCallback and provided callback if frame is changed and render needs update
+   * @param cb
+   */
+  processFrame(cb?: onRenderingCallback) {
+    const frameToPlay = this.getCurrentFrameNumber();
 
-    this.counterCtx.drawImage(
-      this.actorCtx.canvas,
-      0,
-      this.videoSize - (this.encoderWindowSize / 2),
-      this.encoderWindowSize * this.encoderByteLength,
-      (this.encoderWindowSize / 2),
-      0,
-      0,
-      this.encoderByteLength, 1);
-
-    const imgData = this.counterCtx.getImageData(0, 0, this.encoderByteLength, 1);
-
-    let frameToPlay = 0;
-    for (let i = 0; i < this.encoderByteLength; i++) {
-      frameToPlay += Math.round(imgData.data[i * 4] / 255) * Math.pow(2, i);
+    if (frameToPlay > this.numberOfFrames) {
+      console.warn('video texture is not ready? frameToPlay:', frameToPlay);
+      return;
     }
 
-    this._videoTexture.needsUpdate = true;
-
-    frameToPlay = Math.max(frameToPlay - 1, 0);
+    if (this.currentFrame === frameToPlay) {
+      return;
+    }
 
     const hasFrame = this.meshBuffer.has(frameToPlay);
     // If keyframe changed, set mesh buffer to new keyframe
@@ -326,8 +333,38 @@ export default class Player {
       }
       if(this.rendererCallback) this.rendererCallback();
       if(cb) cb();
-
     }
+  }
+
+  getCurrentFrameNumber():number {
+    const encoderWindowWidth = this.encoderWindowSize * this.encoderByteLength;
+    const encoderWindowHeight = this.encoderWindowSize / 2;
+    this.actorCtx.clearRect(0, 0, this.videoSize, this.videoSize);
+    this.actorCtx.drawImage(this._video, 0, 0);
+
+    this.counterCtx.clearRect(0, 0, this.encoderByteLength, 1);
+    this.counterCtx.drawImage(
+      this.actorCtx.canvas,
+      0,
+      this.videoSize - encoderWindowHeight,
+      encoderWindowWidth,
+      encoderWindowHeight,
+      0,
+      0,
+      this.encoderByteLength, 1);
+
+    const imgData = this.counterCtx.getImageData(0, 0, this.encoderByteLength, 1);
+
+    let frameToPlay = 0;
+    for (let i = 0; i < this.encoderByteLength; i++) {
+      frameToPlay += Math.round(imgData.data[i * 4] / 255) * Math.pow(2, i);
+    }
+
+    frameToPlay = Math.max(frameToPlay - 1, 0);
+
+    this._videoTexture.needsUpdate = this.currentFrame !== frameToPlay;
+
+    return frameToPlay;
   }
 
   get video():any {
@@ -338,13 +375,14 @@ export default class Player {
   play() {
     this.hasPlayed = true;
     this._video.playsInline = true;
-        this.mesh.visible = true
-        this._video.play()
+    this.mesh.visible = true
+    this._video.play()
   }
 
   dispose(): void {
     this._worker?.terminate();
     if (this._video) {
+      this._video.pause();
       this._video = null;
       this._videoTexture.dispose();
       this._videoTexture = null;
