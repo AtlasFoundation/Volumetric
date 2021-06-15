@@ -105,7 +105,6 @@ dist/
 #VSCode
 .vscode
 node_modules
-assets
 CMakeFiles
 
 package-lock.json
