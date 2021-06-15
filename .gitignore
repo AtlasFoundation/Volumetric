@@ -135,3 +135,10 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 *.manifest
+unity/.DS_Store
+.DS_Store
+
+unity/Assets/StreamingAssets
+unity/Library
+unity/Temp
+unity/Logs
