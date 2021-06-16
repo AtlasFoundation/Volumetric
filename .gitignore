@@ -116,8 +116,6 @@ src/worker/node_modules
 *.crt
 
 *.cpp.o
-(.ply
-
 dev/CMakeFiles
 dev/CMakeFiles/
 dev/CMakeFiles/*
