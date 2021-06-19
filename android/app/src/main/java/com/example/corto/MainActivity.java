@@ -11,6 +11,8 @@ import android.widget.Toast;
 
 import com.example.corto.databinding.ActivityMainBinding;
 
+import java.util.Timer;
+
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 100;
 
@@ -27,25 +29,24 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
         TextView tv = binding.sampleText;
         tv.setText("Static text");
+
         String videoTexturePath = "android.resource://" + getPackageName() + "/" + R.raw.liamt;
         String volumetricPath = "liamu.uvol";
         String manifestPath = "liam.manifest";
 
-        LoadActor(manifestPath, volumetricPath, videoTexturePath);
-        PlayActor();
-
-        try {
-            this.getSupportActionBar().hide();
-        }
-        catch (NullPointerException ignored){}
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN); //enable full screen
-        View decorView = getWindow().getDecorView();
-        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN;
-        decorView.setSystemUiVisibility(uiOptions);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(view);
+        new java.util.Timer().schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        LoadActor(manifestPath, volumetricPath, videoTexturePath);
+                        PlayActor();
+
+                    }
+                },
+                500
+        );
+
     }
 
     public void PlayActor(){

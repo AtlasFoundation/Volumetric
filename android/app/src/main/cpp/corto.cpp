@@ -41,22 +41,43 @@ JNIEXPORT jobject Java_com_example_corto_Actor_decode (JNIEnv * env, jobject thi
     // Create a jclass from actual Java object class path
     jclass geometryClass = env->FindClass("com/example/corto/Mesh");
     // Get constructor method
-    jmethodID methodId = env->GetMethodID(geometryClass, "<init>", "()V");
+    jmethodID methodId = env->GetMethodID(geometryClass, "<init>", "([I[F[F[F)V");
+
     // Instantiate new object from class
-    jobject geometryObj = env->NewObject(geometryClass, methodId);
 
-    // TODO:
-    // 1: Assign the index vector<int> array to the index [] from the geometryObj we just created
-    // 2: Same for the normals, UVs and coords
-    // 3: Return the object to java
+    // Get index
+    jfieldID index_id = env -> GetFieldID(geometryClass, "indices", "[I");
+    // Get coords
+    jfieldID vertices_id = env -> GetFieldID(geometryClass, "vertices", "[F");
 
-    // jfieldID indexIntArrayField = env->GetFieldID(geometryClass, "index", "[I");
-    // env->SetIntArrayRegion(indexIntArrayField, 0, index.size(), index.data());
+    // Get UVs
+    jfieldID texCoords_id = env -> GetFieldID(geometryClass, "texCoords", "[F");
+
+    // Get normals
+    jfieldID normals_id = env -> GetFieldID(geometryClass, "normals", "[F");
+
+
+
+    jintArray jIndex = env -> NewIntArray((index.size()));
+    env -> SetIntArrayRegion(jIndex, 0, index.size(), reinterpret_cast<const jint *>(index.data()));
+
+    jfloatArray jCoords = env -> NewFloatArray((coords.size()));
+    env -> SetFloatArrayRegion(jCoords, 0, coords.size(), reinterpret_cast<const jfloat *>(coords.data()));
+
+    jfloatArray jUVs = env -> NewFloatArray((uvs.size()));
+    env -> SetFloatArrayRegion(jUVs, 0, uvs.size(), reinterpret_cast<const jfloat *>(uvs.data()));
+
+    jfloatArray jNormals = env -> NewFloatArray((normals.size()));
+    env -> SetFloatArrayRegion(jNormals, 0, normals.size(), reinterpret_cast<const jfloat *>(normals.data()));
+
+    jobject geometryObj = env->NewObject(geometryClass, methodId, jIndex, jCoords, jNormals, jUVs);
+
+    __android_log_write(ANDROID_LOG_DEBUG, "DECODER", "to_string(index.size()).c_str()");
+
+    __android_log_write(ANDROID_LOG_DEBUG, "DECODER", to_string(index.size()).c_str());
 
     return geometryObj;
-   
-   
-   
+
    
    
    

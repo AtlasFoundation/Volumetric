@@ -42,7 +42,6 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
         cameraPerspective = new CameraPerspective(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP, 1, 1000);
 
-        actor.mesh = new Mesh(getContext(),"monkey.obj");
         sceneShader = new SceneShader(getContext());
     }
 
@@ -54,8 +53,8 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        if(actor != null && actor.updateSurface){
-        GLES20.glClearColor(0, 0, 0, 0);
+        if(actor != null && actor.mesh != null && actor.updateSurface){
+        GLES20.glClearColor(1, 0, 0, 1);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         cameraPerspective.loadVpMatrix();

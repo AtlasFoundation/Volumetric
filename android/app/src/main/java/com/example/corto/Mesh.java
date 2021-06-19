@@ -13,9 +13,9 @@ import java.util.Arrays;
 
 public class Mesh {
 
+    private int[] indices;
     private float[] vertices;
     private float[] normals;
-    private int[] indices;
     private float[] texCoords;
     private final int sizeVertex;
     private FloatBuffer vertexBuffer;
@@ -30,6 +30,19 @@ public class Mesh {
         this.sizeVertex = 3;
         position = new Vector3f(0,0,0);
         rotation = new Vector3f(0,0,0);
+        scale = 1;
+    }
+
+    public Mesh(int[] indices, float[] vertices, float[] normals, float[] texCoords){
+        // this.sizeVertex = 3;
+        position = new Vector3f(0,0,0);
+        rotation = new Vector3f(0,0,0);
+
+        this.indices = indices;
+        this.vertices = vertices;
+        this.normals = normals;
+        this.texCoords = texCoords;
+
         scale = 1;
     }
 

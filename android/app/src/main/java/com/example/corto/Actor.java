@@ -63,7 +63,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         this.mediaPlayer = MediaPlayer.create(context, Uri.parse(videoUrl));
         this.context = context;
         this.view = view;
-        this.mesh = new Mesh();
+        this.mesh = null;
         LoadManifest();
         LoadVideo();
         LoadUvol();
@@ -131,9 +131,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
             Log.v(TAG, "BYTES ARE " + actorData.length);
 
             // TODO: When object returns successfully, decode to the existing mesh
+
             // For now we are returning dummy
             this.mesh = decode(bytes);
-
+            this.mesh.init();
 
         } catch (JSONException | IOException e) {
             e.printStackTrace();
