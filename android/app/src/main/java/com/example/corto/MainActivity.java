@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,13 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "CORTO";
     private static final int PERMISSION_REQUEST_CODE = 100;
-
-    // Used to load the 'native-lib' library on application startup.
-    static {
-        System.loadLibrary("libcorto");
-    }
 
     private ActivityMainBinding binding;
 
@@ -36,25 +32,25 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         TextView tv = binding.sampleText;
+        tv.setText("Static text");
 
-        if(!checkPermission())
-            requestPermission();
+//        if(!checkPermission())
+//            requestPermission();
+//
+//        requestPermission();
+
         try {
-            InputStream is = getResources().openRawResource(R.raw.mesh);
-            int size = is.available();
-            byte[] bytes = new byte[size];
-            is.read(bytes, 0, bytes.length);
-            Log.v(TAG, "BYTES ARE " + size);
-            is.close();
-
-            Log.v(TAG, "BYTE[0] IS " + bytes[0]);
-            tv.setText(decode(bytes));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            this.getSupportActionBar().hide();
         }
-        requestPermission();
+        catch (NullPointerException ignored){}
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN); //enable full screen
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        setContentView(new MeshView(this));
     }
 
 
@@ -73,8 +69,5 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(new String[] {android.Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
         }
     }
-
-    // Call native decode function
-    public native String decode(byte[] bytes);
 
 }
