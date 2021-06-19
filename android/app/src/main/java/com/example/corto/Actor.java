@@ -18,7 +18,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class Actor implements SurfaceTexture.OnFrameAvailableListener {
+public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener {
     private static final String TAG = "CORTO_OPENGLES";
 
     // Used to load the 'native-lib' library on application startup.
@@ -40,6 +40,8 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
     private Context context;
     private boolean playerPrepared;
     public boolean updateSurface;
+    private InputStream uvolInputStream;
+    private int currentUvolPosition = 0;
 
     public float frameRate = 30;
 
@@ -58,9 +60,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
         this.manifestUrl = manifestUrl;
         this.uvolUrl = uvolUrl;
         this.videoUrl = videoUrl;
-        this.mediaPlayer = new MediaPlayer();
+        this.mediaPlayer = MediaPlayer.create(context, Uri.parse(videoUrl));
         this.context = context;
         this.view = view;
+        this.mesh = new Mesh();
         LoadManifest();
         LoadVideo();
         LoadUvol();
@@ -68,7 +71,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
 
     public void LoadManifest(){
         try {
-            InputStream is = context.getAssets().open(this.manifestUrl);
+            InputStream is = this.context.getAssets().open(this.manifestUrl);
 
             int size = is.available();
 
@@ -87,11 +90,19 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
 
     public void LoadUvol(){
         // TODO: Open an input stream, set position to 0, and allocate input stream
+        try {
+            uvolInputStream = context.getAssets().open(this.uvolUrl);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public ActorData GetActorDataForFrame(){
         // TODO: Get start and end lengths from manifest
         try {
+            Log.v(TAG, " this.currentFrame is " +  this.currentFrame);
+
             JSONObject frameData = this.frameData.getJSONObject(this.currentFrame);
 
             ActorData actorData = new ActorData();
@@ -100,11 +111,24 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
             actorData.vertices = frameData.getInt("vertices");
             actorData.faces = frameData.getInt("faces");
 
-            InputStream is = context.getAssets().open(this.uvolUrl);
+            Log.v(TAG, "length " + actorData.length);
+            Log.v(TAG, "startBytePosition " + actorData.startBytePosition);
+
+
+            Log.v(TAG, "available " + uvolInputStream.available());
+
+            if(currentUvolPosition > actorData.startBytePosition){
+                uvolInputStream = context.getAssets().open(this.uvolUrl);
+                uvolInputStream.skip(actorData.startBytePosition);
+            } else {
+                uvolInputStream.skip(actorData.startBytePosition - currentUvolPosition);
+            }
+
+            currentUvolPosition = actorData.startBytePosition;
+
             byte[] bytes = new byte[actorData.length];
-            is.read(bytes, actorData.startBytePosition, actorData.length);
+            uvolInputStream.read(bytes, 0, actorData.length);
             Log.v(TAG, "BYTES ARE " + actorData.length);
-            is.close();
 
             // TODO: When object returns successfully, decode to the existing mesh
             // For now we are returning dummy
@@ -118,23 +142,21 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     public void LoadVideo(){
-        try {
-            this.mediaPlayer.setDataSource(context, Uri.parse(this.videoUrl));
-            this.mesh = new Mesh();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+////            this.mediaPlayer.setDataSource(context, Uri.parse(this.videoUrl));
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         //Set loop play
         mediaPlayer.setLooping(true);
+        mediaPlayer.setOnPreparedListener(this);
 
-        if (!playerPrepared) {
-            try {
-                mediaPlayer.prepare();
-                playerPrepared = true;
-            } catch (IOException t) {
-                Log.e(TAG_ACTOR, "media player prepare failed");
-            }
-        }
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer player) {
+        playerPrepared = true;
+
         textureId = loadTexture(context);
 
         //SurfaceTexture is to get data of a new frame from the video stream and the camera data stream. Use updateTexImage to get the new data.
@@ -151,6 +173,12 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
         Log.d(TAG_ACTOR, "Actor onCreate END");
     }
 
+
+    @Override
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+        return false;
+    }
+
     public void Play(){
         mediaPlayer.start();
     }
@@ -161,6 +189,12 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener {
 
     public void Destroy(){
         mediaPlayer.reset();
+        try {
+            uvolInputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         // Deallocate input stream
     }
 

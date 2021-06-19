@@ -4,8 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -13,29 +11,27 @@ import android.widget.Toast;
 
 import com.example.corto.databinding.ActivityMainBinding;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 100;
 
     private ActivityMainBinding binding;
-    MeshView view = new MeshView(this);
+    MeshView view;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        view = new MeshView(this);
+
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         TextView tv = binding.sampleText;
         tv.setText("Static text");
+        String videoTexturePath = "android.resource://" + getPackageName() + "/" + R.raw.liamt;
+        String volumetricPath = "liamu.uvol";
+        String manifestPath = "liam.manifest";
 
-        LoadActor("liam.manifest", "liam.uvol", "liam.mp4");
+        LoadActor(manifestPath, volumetricPath, videoTexturePath);
         PlayActor();
 
         try {

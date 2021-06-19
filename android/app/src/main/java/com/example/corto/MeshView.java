@@ -28,7 +28,6 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     public MeshView(Context context) {
         super(context);
-        setSystemUiVisibility(SYSTEM_UI_FLAG_IMMERSIVE | SYSTEM_UI_FLAG_FULLSCREEN);
         setEGLContextClientVersion(2);
         setRenderer(this);
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
