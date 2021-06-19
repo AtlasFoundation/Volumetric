@@ -12,7 +12,7 @@
   "jest": "ts-jest",
   "scripts": {
     "check-errors": "tsc --noemit",
-    "corto": "babel ./src/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
+    "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
   "author": "XRFoundation",
   "license": "MIT",
