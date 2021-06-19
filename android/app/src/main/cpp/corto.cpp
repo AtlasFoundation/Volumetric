@@ -11,7 +11,7 @@
 #include <android/log.h>
 
 extern "C"
-JNIEXPORT jobject Java_com_example_corto_MainActivity_decode (JNIEnv * env, jobject thiz, jbyteArray bytes){
+JNIEXPORT jobject Java_com_example_corto_MeshView_decode (JNIEnv * env, jobject thiz, jbyteArray bytes){
     std::vector<uint16_t> index;
     std::vector<float> coords;
     std::vector<float> normals;
@@ -39,7 +39,7 @@ JNIEXPORT jobject Java_com_example_corto_MainActivity_decode (JNIEnv * env, jobj
     decoder.decode();
 
     // Create a jclass from actual Java object class path
-    jclass geometryClass = env->FindClass("com/example/corto/Geometry");
+    jclass geometryClass = env->FindClass("com/example/corto/Mesh");
     // Get constructor method
     jmethodID methodId = env->GetMethodID(geometryClass, "<init>", "()V");
     // Instantiate new object from class

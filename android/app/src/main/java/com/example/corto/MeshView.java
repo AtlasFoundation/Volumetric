@@ -34,7 +34,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     public static int currentFrame = 0;
     public static int lastFrame = -1;
-    public static MeshObj meshObj;
+    public static Mesh meshObj;
     private byte[] bytes;
 
     public MeshView(Context context) {
@@ -54,7 +54,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
         cameraPerspective = new CameraPerspective(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP, 1, 1000);
 
-        meshObj = new MeshObj(getContext(),"monkey2.obj");
+        meshObj = new Mesh(getContext(),"monkey.obj");
         sceneShader = new SceneShader(getContext());
     }
 
@@ -66,14 +66,6 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        GLES20.glClearColor(0, 0, 0, 0);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-
-
-
-        cameraPerspective.loadVpMatrix();
-        sceneShader.setViewPos(cameraPerspective.getEye());
-
         if(currentFrame != lastFrame){
                 lastFrame = currentFrame;
                 try {
@@ -84,7 +76,11 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
                     is.read(bytes, 0, bytes.length);
                     Log.v(TAG, "BYTES ARE " + size);
                     is.close();
-                    decode(bytes);
+
+                    // TODO: When object returns successfully, decode to the existing mesh
+                    // For now we are returning dummy
+                    Mesh returnedGeometryObject = decode(bytes);
+
                     Log.v(TAG, "BYTE[0] IS " + bytes[0]);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
@@ -93,16 +89,22 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
                 }
             }
 
-            Matrix.setIdentityM(mMatrix, 0);
-            meshObj.doTransformation(mMatrix);
-            Matrix.multiplyMM(mvpMatrix, 0, cameraPerspective.getVpMatrix(), 0, mMatrix, 0);
-            sceneShader.setMesh(meshObj);
-            sceneShader.setMMatrix(mMatrix);
-            sceneShader.setMvpMatrix(mvpMatrix);
-            sceneShader.bindData();
-            GLES20.glDrawElements(GLES20.GL_TRIANGLES, meshObj.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, meshObj.getIndicesBuffer());
-            sceneShader.unbindData();
+        GLES20.glClearColor(0, 0, 0, 0);
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+
+        cameraPerspective.loadVpMatrix();
+        sceneShader.setViewPos(cameraPerspective.getEye());
+
+        Matrix.setIdentityM(mMatrix, 0);
+        Matrix.multiplyMM(mvpMatrix, 0, cameraPerspective.getVpMatrix(), 0, mMatrix, 0);
+
+        sceneShader.setMesh(meshObj);
+        sceneShader.setMMatrix(mMatrix);
+        sceneShader.setMvpMatrix(mvpMatrix);
+        sceneShader.bindData();
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, meshObj.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, meshObj.getIndicesBuffer());
+        sceneShader.unbindData();
     }
-    public native String decode(byte[] bytes);
+    public native Mesh decode(byte[] bytes);
 
 }

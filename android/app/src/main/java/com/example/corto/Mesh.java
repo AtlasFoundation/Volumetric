@@ -11,7 +11,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 
-public abstract class Mesh {
+public class Mesh {
 
     private float[] vertices;
     private float[] normals;
@@ -25,6 +25,13 @@ public abstract class Mesh {
     protected Vector3f position;
     protected Vector3f rotation;
     protected float scale;
+
+    public Mesh(){
+        this.sizeVertex = 3;
+        position = new Vector3f(0,0,0);
+        rotation = new Vector3f(0,0,0);
+        scale = 1;
+    }
 
 
     public Mesh(Context context, String mesh){
@@ -42,11 +49,11 @@ public abstract class Mesh {
             this.indices = obj.getIndices();
     }
 
-    private void init(){
+    public void init(){
         load();
-        position = new Vector3f(0,0,0);
-        rotation = new Vector3f(0,0,0);
-        scale = 1;
+        this.position = new Vector3f(0,0,0);
+        this.rotation = new Vector3f(0,0,0);
+        this.scale = 1;
     }
 
     private void load(){
@@ -92,13 +99,6 @@ public abstract class Mesh {
             indicesBuffer.put(indices);
             indicesBuffer.position(0);
         }
-    }
-
-    public abstract void doTransformation(float[] mMatrix);
-
-    public Mesh rotateY(float[] mMatrix){
-        Matrix.rotateM(mMatrix, 0, rotation.y, 0, 1, 0);
-        return this;
     }
 
     public FloatBuffer getVertexBuffer(){
