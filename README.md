@@ -14,7 +14,7 @@ This tech was built in partnership with Wild Capture and others. You can see an 
 
 Current uvol files consist of a .uvol binary, manifest file and video texture. Future versions will embed everything into the uvol binary or in a single MP4 container.
 
-Currently playback works in WebGL with three.js -- Unity and Unreal support are available and coming soon, get in touch if you're interested!
+Currently playback works in WebGL with three.js and Unity. Android and iOS are in development, Unreal support is on the roadmap (intrepid C++ developers should be able to port this in a day by reading the source from other examples, since the core codec is C++ based).
 
 ## Requirements
 For encoding, you will need Node.js 12+ and Python 3 installed.
