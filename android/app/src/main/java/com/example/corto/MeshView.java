@@ -15,16 +15,8 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
-    private static final String TAG = "CORTO_OPENGLES";
-
-    // Used to load the 'native-lib' library on application startup.
-    static {
-        System.loadLibrary("libcorto");
-    }
-    // Call native decode function
 
     private SceneShader sceneShader;
-    private ArrayList<Mesh> meshes;
     private final float[] mMatrix = new float[16];
     private final float[] mvpMatrix = new float[16];
     private CameraPerspective cameraPerspective;
@@ -32,10 +24,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
     private static final Vector3f CAMERA_CENTER = new Vector3f(0,0,0);
     private static final Vector3f CAMERA_UP = new Vector3f(0,1,0);
 
-    public static int currentFrame = 0;
-    public static int lastFrame = -1;
-    public static Mesh meshObj;
-    private byte[] bytes;
+    public static Actor actor;
 
     public MeshView(Context context) {
         super(context);
@@ -54,7 +43,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
         cameraPerspective = new CameraPerspective(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP, 1, 1000);
 
-        meshObj = new Mesh(getContext(),"monkey.obj");
+        actor.mesh = new Mesh(getContext(),"monkey.obj");
         sceneShader = new SceneShader(getContext());
     }
 
@@ -66,29 +55,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
-        if(currentFrame != lastFrame){
-                lastFrame = currentFrame;
-                try {
-                    InputStream is = getResources().openRawResource(R.raw.mesh);
-                    int size = is.available();
-                    bytes = new byte[size];
-
-                    is.read(bytes, 0, bytes.length);
-                    Log.v(TAG, "BYTES ARE " + size);
-                    is.close();
-
-                    // TODO: When object returns successfully, decode to the existing mesh
-                    // For now we are returning dummy
-                    Mesh returnedGeometryObject = decode(bytes);
-
-                    Log.v(TAG, "BYTE[0] IS " + bytes[0]);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
+        if(actor != null && actor.updateSurface){
         GLES20.glClearColor(0, 0, 0, 0);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
@@ -98,13 +65,13 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(mMatrix, 0);
         Matrix.multiplyMM(mvpMatrix, 0, cameraPerspective.getVpMatrix(), 0, mMatrix, 0);
 
-        sceneShader.setMesh(meshObj);
+        sceneShader.setMesh(actor.mesh);
         sceneShader.setMMatrix(mMatrix);
         sceneShader.setMvpMatrix(mvpMatrix);
         sceneShader.bindData();
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, meshObj.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, meshObj.getIndicesBuffer());
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, actor.mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, actor.mesh.getIndicesBuffer());
         sceneShader.unbindData();
-    }
-    public native Mesh decode(byte[] bytes);
+        }
 
+    }
 }

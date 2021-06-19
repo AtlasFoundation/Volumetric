@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 100;
 
     private ActivityMainBinding binding;
+    MeshView view = new MeshView(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,10 +35,8 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = binding.sampleText;
         tv.setText("Static text");
 
-//        if(!checkPermission())
-//            requestPermission();
-//
-//        requestPermission();
+        LoadActor("liam.manifest", "liam.uvol", "liam.mp4");
+        PlayActor();
 
         try {
             this.getSupportActionBar().hide();
@@ -50,7 +49,24 @@ public class MainActivity extends AppCompatActivity {
                 | View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(new MeshView(this));
+        setContentView(view);
+    }
+
+    public void PlayActor(){
+        if(view.actor != null)
+            view.actor.Play();
+    }
+
+    public void StopActor(){
+
+    }
+
+    public void LoadActor(String manifestUrl, String uvolUrl, String videoUrl){
+        if(view.actor != null){
+            view.actor.Destroy();
+        }
+
+        view.actor = new Actor(this, view, manifestUrl, uvolUrl, videoUrl);
     }
 
 
