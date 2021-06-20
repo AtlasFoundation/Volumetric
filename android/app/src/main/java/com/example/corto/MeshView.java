@@ -46,7 +46,9 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         GLES20.glFrontFace(GLES20.GL_CCW);
 
         cameraPerspective = new CameraPerspective(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP, 1, 1000);
-        actor.mesh = new Mesh(getContext(),"monkey.obj");
+        // actor.mesh = new Mesh(getContext(),"monkey.obj");
+        actor.currentFrame = 0;
+        actor.GetActorDataForFrame();
 
         sceneShader = new SceneShader(getContext());
     }
@@ -70,20 +72,20 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         if(actor != null){
             if(actor.isPrepared){
                 actor.isPrepared = false;
-
-                final int[] textures = new int[1];
-                //Generate a texture to textures, and return a non-zero value if the generation is successful
-                GLES20.glGenTextures(1, textures, 0);
-
-
-                if (textures[0]==0){
-                    Log.d("ERROR","Failed to generate texture object");
-
-                }
-                //Bind the texture we just generated to OpenGL texture
-                GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textures[0]);
-
-                actor.surfaceTexture.attachToGLContext(textures[0]);
+//
+//                final int[] textures = new int[1];
+//                //Generate a texture to textures, and return a non-zero value if the generation is successful
+//                GLES20.glGenTextures(1, textures, 0);
+//
+//
+//                if (textures[0]==0){
+//                    Log.d("ERROR","Failed to generate texture object");
+//
+//                }
+//                //Bind the texture we just generated to OpenGL texture
+//                GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textures[0]);
+//
+//                actor.surfaceTexture.attachToGLContext(textures[0]);
 
 
                 //Used to set texture filtering method, GL_TEXTURE_MIN_FILTER is the filtering method when zooming out, GL_TEXTURE_MAG_FILTER is zooming in
@@ -92,18 +94,18 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 //                GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
 //                        GLES20.GL_LINEAR);
 
-                int textureId = textures[0];
-
-                //SurfaceTexture is to get data of a new frame from the video stream and the camera data stream. Use updateTexImage to get the new data.
-                //Use textureId to create a SurfaceTexture
-                actor.surfaceTexture = new SurfaceTexture(textureId);
-                //Listening for a new frame data
-                actor.surfaceTexture.setOnFrameAvailableListener(actor);
-                //Use surfaceTexture to create a Surface
-                Surface surface = new Surface(actor.surfaceTexture);
-                //Set the surface as the output surface of the mediaPlayer
-                actor.mediaPlayer.setSurface(surface);
-                surface.release();
+//                int textureId = textures[0];
+//
+//                //SurfaceTexture is to get data of a new frame from the video stream and the camera data stream. Use updateTexImage to get the new data.
+//                //Use textureId to create a SurfaceTexture
+//                actor.surfaceTexture = new SurfaceTexture(textureId);
+//                //Listening for a new frame data
+//                actor.surfaceTexture.setOnFrameAvailableListener(actor);
+//                //Use surfaceTexture to create a Surface
+//                Surface surface = new Surface(actor.surfaceTexture);
+//                //Set the surface as the output surface of the mediaPlayer
+//                actor.mediaPlayer.setSurface(surface);
+//                surface.release();
 
                 Log.d("ACTOR_CREATE", "Actor onCreate END");
             }
@@ -112,17 +114,18 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 //                actor.GetActorDataForFrame();
 //                actor.setLastFrameToCurrentFrame();
             }
-            if(actor.mesh != null) {
-                sceneShader.setMesh(actor.mesh);
+        if(actor.mesh != null) {
+            sceneShader.setMesh(actor.mesh);
 
-                sceneShader.bindData();
-                GLES20.glDrawElements(GLES20.GL_TRIANGLES, actor.mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, actor.mesh.getIndicesBuffer());
-                sceneShader.unbindData();
-                Log.v("WORKS", "actor != null && actor.mesh != null ");
-                Log.v("actor != null", actor.toString());
-                Log.v("actor.mesh", actor.mesh.toString());
-            }
+            sceneShader.bindData();
+            GLES20.glDrawElements(GLES20.GL_TRIANGLES, actor.mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, actor.mesh.getIndicesBuffer());
+            sceneShader.unbindData();
+            Log.v("WORKS", "actor != null && actor.mesh != null ");
+            Log.v("actor != null", actor.toString());
+            Log.v("actor.mesh", actor.mesh.toString());
+        }
         } else {
+            actor.currentFrame = 0;
             Log.v("DOESNT WORK", "actor != null && actor.mesh != null ");
         }
 

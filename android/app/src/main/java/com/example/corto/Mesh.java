@@ -30,7 +30,7 @@ public class Mesh {
         this.sizeVertex = 3;
         position = new Vector3f(0,0,0);
         rotation = new Vector3f(0,0,0);
-        scale = 1;
+        scale = .1f;
     }
 
     public Mesh(int[] indices, float[] vertices, float[] normals, float[] texCoords){
@@ -43,7 +43,7 @@ public class Mesh {
         this.normals = normals;
         this.texCoords = texCoords;
 
-        scale = 1;
+        scale = .1f;
     }
 
 
@@ -64,9 +64,6 @@ public class Mesh {
 
     public void init(){
         load();
-        this.position = new Vector3f(0,0,0);
-        this.rotation = new Vector3f(0,0,0);
-        this.scale = 1;
     }
 
     private void load(){

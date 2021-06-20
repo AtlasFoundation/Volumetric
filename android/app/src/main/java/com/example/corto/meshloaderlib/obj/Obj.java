@@ -28,9 +28,9 @@ public class Obj {
         textureCoords = new float[numVertices * 2];
         normals = new float[numVertices * 3];
         indices = new int[getNumIndices()];
-        if (useMaterial()){
-            material = new Material(context,getMaterialFileName());
-        }
+//        if (useMaterial()){
+//            material = new Material(context,getMaterialFileName());
+//        }
     }
 
     /**
