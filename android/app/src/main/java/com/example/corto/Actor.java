@@ -34,14 +34,15 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     public String manifestUrl;
     public String uvolUrl;
     public String videoUrl;
-    private SurfaceTexture surfaceTexture;
-    private MediaPlayer mediaPlayer;
+    public SurfaceTexture surfaceTexture;
+    public MediaPlayer mediaPlayer;
     private JSONArray frameData;
     private Context context;
-    private boolean playerPrepared;
     public boolean updateSurface;
     private InputStream uvolInputStream;
     private int currentUvolPosition = 0;
+
+    public boolean isPrepared = false;
 
     public float frameRate = 30;
 
@@ -98,48 +99,44 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     }
 
-    public ActorData GetActorDataForFrame(){
+    public void GetActorDataForFrame(){
         // TODO: Get start and end lengths from manifest
         try {
             Log.v(TAG, " this.currentFrame is " +  this.currentFrame);
 
             JSONObject frameData = this.frameData.getJSONObject(this.currentFrame);
 
-            ActorData actorData = new ActorData();
-            actorData.startBytePosition = frameData.getInt("startBytePosition");
-            actorData.length = frameData.getInt("meshLength");
-            actorData.vertices = frameData.getInt("vertices");
-            actorData.faces = frameData.getInt("faces");
+            int startBytePosition = frameData.getInt("startBytePosition");
+            int length = frameData.getInt("meshLength");
+//            int vertices = frameData.getInt("vertices");
+//            int faces = frameData.getInt("faces");
 
-            Log.v(TAG, "length " + actorData.length);
-            Log.v(TAG, "startBytePosition " + actorData.startBytePosition);
+            Log.v(TAG, "length " + length);
+            Log.v(TAG, "startBytePosition " + startBytePosition);
 
 
             Log.v(TAG, "available " + uvolInputStream.available());
 
-            if(currentUvolPosition > actorData.startBytePosition){
+            if(currentUvolPosition > startBytePosition){
                 uvolInputStream = context.getAssets().open(this.uvolUrl);
-                uvolInputStream.skip(actorData.startBytePosition);
+                uvolInputStream.skip(startBytePosition);
             } else {
-                uvolInputStream.skip(actorData.startBytePosition - currentUvolPosition);
+                uvolInputStream.skip(startBytePosition - currentUvolPosition);
             }
 
-            currentUvolPosition = actorData.startBytePosition;
+            currentUvolPosition = startBytePosition;
 
-            byte[] bytes = new byte[actorData.length];
-            uvolInputStream.read(bytes, 0, actorData.length);
-            Log.v(TAG, "BYTES ARE " + actorData.length);
+            byte[] bytes = new byte[length];
+            uvolInputStream.read(bytes, 0, length);
+            Log.v(TAG, "BYTES ARE " + length);
 
-            // TODO: When object returns successfully, decode to the existing mesh
-
-            // For now we are returning dummy
             this.mesh = decode(bytes);
             this.mesh.init();
+            Log.v(TAG, "MESH INITED ");
 
         } catch (JSONException | IOException e) {
             e.printStackTrace();
         }
-        return null;
     }
 
     public void LoadVideo(){
@@ -156,22 +153,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     @Override
     public void onPrepared(MediaPlayer player) {
-        playerPrepared = true;
+//
+        isPrepared = true;
+        Play();
 
-        textureId = loadTexture(context);
-
-        //SurfaceTexture is to get data of a new frame from the video stream and the camera data stream. Use updateTexImage to get the new data.
-        //Use textureId to create a SurfaceTexture
-        surfaceTexture = new SurfaceTexture(textureId);
-        //Listening for a new frame data
-        surfaceTexture.setOnFrameAvailableListener(this);
-        //Use surfaceTexture to create a Surface
-        Surface surface = new Surface(surfaceTexture);
-        //Set the surface as the output surface of the mediaPlayer
-        mediaPlayer.setSurface(surface);
-        surface.release();
-
-        Log.d(TAG_ACTOR, "Actor onCreate END");
     }
 
 
@@ -199,7 +184,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         // Deallocate input stream
     }
 
-    public static int loadTexture(Context context){
+    public static int loadTexture(){
 
         final int[] textures = new int[1];
         //Generate a texture to textures, and return a non-zero value if the generation is successful
@@ -210,12 +195,12 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
             return 0;
         }
         //Bind the texture we just generated to OpenGL 3D texture, and tell OpenGL that this is a 3D texture
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textures[0]);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
 
         //Used to set texture filtering method, GL_TEXTURE_MIN_FILTER is the filtering method when zooming out, GL_TEXTURE_MAG_FILTER is zooming in
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
+        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
                 GLES20.GL_NEAREST);
-        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
+        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
                 GLES20.GL_LINEAR);
 
         return textures[0];
@@ -225,10 +210,8 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
         this.setCurrentFrameFromTime();
         if(lastFrame != currentFrame){
-            this.GetActorDataForFrame();
             updateSurface = true;
-            this.setLastFrameToCurrentFrame();
-        }
+       }
     }
 
 

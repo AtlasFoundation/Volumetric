@@ -35,17 +35,7 @@ public class MainActivity extends AppCompatActivity {
         String manifestPath = "liam.manifest";
 
         setContentView(view);
-        new java.util.Timer().schedule(
-                new java.util.TimerTask() {
-                    @Override
-                    public void run() {
-                        LoadActor(manifestPath, volumetricPath, videoTexturePath);
-                        PlayActor();
-
-                    }
-                },
-                500
-        );
+        LoadActor(manifestPath, volumetricPath, videoTexturePath);
 
     }
 

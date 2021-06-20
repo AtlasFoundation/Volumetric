@@ -34,7 +34,7 @@ public class Mesh {
     }
 
     public Mesh(int[] indices, float[] vertices, float[] normals, float[] texCoords){
-        // this.sizeVertex = 3;
+        this.sizeVertex = 3;
         position = new Vector3f(0,0,0);
         rotation = new Vector3f(0,0,0);
 

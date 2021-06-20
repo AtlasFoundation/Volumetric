@@ -3,6 +3,8 @@ package com.example.corto;
 import android.content.Context;
 import android.opengl.GLES20;
 
+import java.nio.FloatBuffer;
+
 public final class SceneShader extends Shader {
 
     private float[] mMatrix;
@@ -33,6 +35,8 @@ public final class SceneShader extends Shader {
         GLES20.glEnableVertexAttribArray(aPosition);
         GLES20.glEnableVertexAttribArray(aNormal);
         GLES20.glEnableVertexAttribArray(aTexCoords);
+        long meshSize = mesh.getSizeVertex();
+        FloatBuffer buffer = mesh.getVertexBuffer();
         GLES20.glVertexAttribPointer(aPosition, mesh.getSizeVertex(), GLES20.GL_FLOAT, false, 0, mesh.getVertexBuffer());
         GLES20.glVertexAttribPointer(aNormal, 3, GLES20.GL_FLOAT, false, 0, mesh.getNormalBuffer());
         GLES20.glVertexAttribPointer(aTexCoords, 2, GLES20.GL_FLOAT, false, 0, mesh.getTexCoordsBuffer());

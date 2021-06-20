@@ -46,6 +46,6 @@ vec4 calcLight(vec3 normal, vec3 viewDir){
 void main() {
     vec3 normal = normalize(vNormal);
     vec3 viewDir = normalize(uViewPos - vec3(vPosition));
-    gl_FragColor = calcLight(normal, viewDir);
+    gl_FragColor = getColor();
 }
 
