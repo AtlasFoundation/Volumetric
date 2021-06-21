@@ -18,6 +18,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 
+import timber.log.Timber;
+
 public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener {
     private static final String TAG = "CORTO_OPENGLES";
 
@@ -71,6 +73,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
 
     public void LoadManifest(){
+        Timber.d("LoadManifest");
         try {
             InputStream is = this.context.getAssets().open(this.manifestUrl);
 
@@ -100,6 +103,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
 
     public void GetActorDataForFrame(){
+        Timber.d("GetActorDataForFrame");
         // TODO: Get start and end lengths from manifest
         try {
             Log.v(TAG, " this.currentFrame is " +  this.currentFrame);
@@ -133,8 +137,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
             this.mesh = decode(bytes);
             this.mesh.init();
             Log.v(TAG, "MESH INITED ");
+            Timber.e("GetActorDataForFrame finish");
 
         } catch (JSONException | IOException e) {
+            Timber.e("GetActorDataForFrame "+e);
             e.printStackTrace();
         }
     }
