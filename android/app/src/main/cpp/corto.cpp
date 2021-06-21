@@ -12,7 +12,7 @@
 
 extern "C"
 JNIEXPORT jobject Java_com_example_corto_Actor_decode (JNIEnv * env, jobject thiz, jbyteArray bytes){
-    std::vector<uint16_t> index;
+    std::vector<uint32_t> index;
     std::vector<float> coords;
     std::vector<float> normals;
     std::vector<float> uvs;
