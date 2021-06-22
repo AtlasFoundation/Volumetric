@@ -17,6 +17,8 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11Ext;
 
+import timber.log.Timber;
+
 import static android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
 
 public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
@@ -40,6 +42,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        Timber.d("onSurfaceCreated");
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glDepthFunc(GLES20.GL_LESS);
         GLES20.glClearDepthf(1.0f);
@@ -55,12 +58,14 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
+        Timber.d("onSurfaceChanged");
         GLES20.glViewport(0, 0, width, height);
         cameraPerspective.setWidth(width).setHeight(height);
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
+        //Timber.d("onDrawFrame");
         GLES20.glClearColor(1, 0, 0, 1);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         cameraPerspective.loadVpMatrix();
@@ -107,22 +112,20 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 //                actor.mediaPlayer.setSurface(surface);
 //                surface.release();
 
-                Log.d("ACTOR_CREATE", "Actor onCreate END");
+                Timber.d("Actor onCreate END");
             }
-            if(actor.updateSurface){
-                actor.updateSurface = false;
-//                actor.GetActorDataForFrame();
-//                actor.setLastFrameToCurrentFrame();
-            }
+
+        actor.updateFrame();
+
         if(actor.mesh != null) {
             sceneShader.setMesh(actor.mesh);
 
             sceneShader.bindData();
             GLES20.glDrawElements(GLES20.GL_TRIANGLES, actor.mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, actor.mesh.getIndicesBuffer());
             sceneShader.unbindData();
-            Log.v("WORKS", "actor != null && actor.mesh != null ");
-            Log.v("actor != null", actor.toString());
-            Log.v("actor.mesh", actor.mesh.toString());
+//            Log.v("WORKS", "actor != null && actor.mesh != null ");
+//            Log.v("actor != null", actor.toString());
+//            Log.v("actor.mesh", actor.mesh.toString());
         }
         } else {
             actor.currentFrame = 0;

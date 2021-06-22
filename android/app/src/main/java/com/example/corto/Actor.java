@@ -10,6 +10,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceHolder;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,8 +56,22 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         this.currentFrame = (int)(mediaPlayer.getCurrentPosition() * this.frameRate)/1000;
     }
 
+    public void updateFrame()
+    {
+        Timber.d("updateFrame");
+        synchronized(this)
+        {
+            if (updateSurface)
+            {
+//                GetActorDataForFrame();
+//                setLastFrameToCurrentFrame();
+                updateSurface = false;
+            }
+        }
+    }
     public void setLastFrameToCurrentFrame(){
         lastFrame = currentFrame;
+        surfaceTexture.updateTexImage();
     }
 
     public Actor(Context context, MeshView view, String manifestUrl, String uvolUrl, String videoUrl){
@@ -67,6 +82,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         this.context = context;
         this.view = view;
         this.mesh = null;
+        int[] tex = new int[1];
+        GLES20.glGenTextures(1, tex, 0);
+        surfaceTexture = new SurfaceTexture(tex[0]);
+        surfaceTexture.setOnFrameAvailableListener(this);
         LoadManifest();
         LoadVideo();
         LoadUvol();
@@ -103,10 +122,9 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
 
     public void GetActorDataForFrame(){
-        Timber.d("GetActorDataForFrame");
+        Timber.d("GetActorDataForFrame %d",currentFrame);
         // TODO: Get start and end lengths from manifest
         try {
-            Log.v(TAG, " this.currentFrame is " +  this.currentFrame);
 
             JSONObject frameData = this.frameData.getJSONObject(this.currentFrame);
 
@@ -115,11 +133,11 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 //            int vertices = frameData.getInt("vertices");
 //            int faces = frameData.getInt("faces");
 
-            Log.v(TAG, "length " + length);
-            Log.v(TAG, "startBytePosition " + startBytePosition);
+            Timber.d("length " + length);
+            Timber.d("startBytePosition " + startBytePosition);
 
 
-            Log.v(TAG, "available " + uvolInputStream.available());
+            Timber.d("available " + uvolInputStream.available());
 
             if(currentUvolPosition > startBytePosition){
                 uvolInputStream = context.getAssets().open(this.uvolUrl);
@@ -132,12 +150,11 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
             byte[] bytes = new byte[length];
             uvolInputStream.read(bytes, 0, length);
-            Log.v(TAG, "BYTES ARE " + length);
+            Timber.d("BYTES ARE " + length);
 
             this.mesh = decode(bytes);
             this.mesh.init();
-            Log.v(TAG, "MESH INITED ");
-            Timber.e("GetActorDataForFrame finish");
+            Timber.d("MESH INITED ");
 
         } catch (JSONException | IOException e) {
             Timber.e("GetActorDataForFrame "+e);
@@ -146,6 +163,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
 
     public void LoadVideo(){
+        Timber.d("LoadVideo");
 //        try {
 ////            this.mediaPlayer.setDataSource(context, Uri.parse(this.videoUrl));
 //        } catch (IOException e) {
@@ -155,11 +173,16 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         mediaPlayer.setLooping(true);
         mediaPlayer.setOnPreparedListener(this);
 
+        Surface surface = new Surface(surfaceTexture);
+        mediaPlayer.setSurface(surface);
+        mediaPlayer.setScreenOnWhilePlaying(true);
+        surface.release();
+
     }
 
     @Override
     public void onPrepared(MediaPlayer player) {
-//
+        Timber.d("onPrepared");
         isPrepared = true;
         Play();
 
@@ -213,7 +236,8 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
 
     @Override
-    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+    public synchronized void onFrameAvailable(SurfaceTexture surfaceTexture) {
+        Timber.d("onFrameAvailable");
         this.setCurrentFrameFromTime();
         if(lastFrame != currentFrame){
             updateSurface = true;
