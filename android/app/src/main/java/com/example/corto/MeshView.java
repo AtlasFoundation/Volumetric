@@ -50,6 +50,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
         cameraPerspective = new CameraPerspective(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP, 1, 1000);
         // actor.mesh = new Mesh(getContext(),"monkey.obj");
+        actor.onSurfaceCreated();
         actor.currentFrame = 0;
         actor.GetActorDataForFrame();
 

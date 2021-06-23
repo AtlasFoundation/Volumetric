@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.Matrix;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -19,7 +20,12 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
 import timber.log.Timber;
+
+import static android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
 
 public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener {
     private static final String TAG = "CORTO_OPENGLES";
@@ -45,6 +51,9 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     private InputStream uvolInputStream;
     private int currentUvolPosition = 0;
 
+    private float[] mSTMatrix = new float[16];
+    private int mTextureID;
+
     public boolean isPrepared = false;
 
     public float frameRate = 30;
@@ -63,17 +72,30 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         {
             if (updateSurface)
             {
+                surfaceTexture.updateTexImage();
+                surfaceTexture.getTransformMatrix(mSTMatrix);
+
 //                GetActorDataForFrame();
-//                setLastFrameToCurrentFrame();
+                setLastFrameToCurrentFrame();
                 updateSurface = false;
             }
         }
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, mTextureID);
+
     }
     public void setLastFrameToCurrentFrame(){
         lastFrame = currentFrame;
         surfaceTexture.updateTexImage();
     }
-
+    private void checkGlError(String op) {
+        int error;
+        while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
+            Timber.e(op + ": glError " + error);
+            throw new RuntimeException(op + ": glError " + error);
+        }
+    }
     public Actor(Context context, MeshView view, String manifestUrl, String uvolUrl, String videoUrl){
         this.manifestUrl = manifestUrl;
         this.uvolUrl = uvolUrl;
@@ -82,15 +104,40 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         this.context = context;
         this.view = view;
         this.mesh = null;
-        int[] tex = new int[1];
-        GLES20.glGenTextures(1, tex, 0);
-        surfaceTexture = new SurfaceTexture(tex[0]);
-        surfaceTexture.setOnFrameAvailableListener(this);
+
         LoadManifest();
         LoadVideo();
         LoadUvol();
+        Matrix.setIdentityM(mSTMatrix, 0);
     }
 
+    public void onSurfaceCreated()
+    {
+        Timber.d("onSurfaceCreated");
+        int[] textures = new int[1];
+        GLES20.glGenTextures(1, textures, 0);
+        mTextureID = textures[0];
+        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, mTextureID);
+
+        Timber.d("mTextureID %d", mTextureID);
+        checkGlError("glBindTexture mTextureID");
+
+        surfaceTexture = new SurfaceTexture(mTextureID);
+        surfaceTexture.setOnFrameAvailableListener(this);
+
+        Surface surface = new Surface(surfaceTexture);
+        mediaPlayer.setSurface(surface);
+        mediaPlayer.setScreenOnWhilePlaying(true);
+        surface.release();
+        mediaPlayer.setLooping(true);
+        mediaPlayer.setOnPreparedListener(this);
+
+        synchronized(this) {
+            updateSurface = false;
+        }
+
+        Play();
+    }
     public void LoadManifest(){
         Timber.d("LoadManifest");
         try {
@@ -170,13 +217,9 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 //            e.printStackTrace();
 //        }
         //Set loop play
-        mediaPlayer.setLooping(true);
-        mediaPlayer.setOnPreparedListener(this);
 
-        Surface surface = new Surface(surfaceTexture);
-        mediaPlayer.setSurface(surface);
-        mediaPlayer.setScreenOnWhilePlaying(true);
-        surface.release();
+
+
 
     }
 
@@ -195,6 +238,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
 
     public void Play(){
+        Timber.d("Play");
         mediaPlayer.start();
     }
 
