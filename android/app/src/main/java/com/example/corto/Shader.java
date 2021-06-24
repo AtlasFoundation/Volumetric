@@ -90,6 +90,7 @@ public abstract class Shader {
         if (val == -1) {
             Timber.e("Could not get attrib location for "+name);
         }
+        Timber.i("getAttrib %s %d", name, val);
         return val;
     }
 
@@ -99,6 +100,7 @@ public abstract class Shader {
         if (val == -1) {
             Timber.e("Could not get attrib location for "+name);
         }
+        Timber.i("getUniform %s %d", name, val);
         return val;
     }
 
