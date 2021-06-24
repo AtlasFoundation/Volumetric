@@ -67,7 +67,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     public void updateFrame()
     {
-        Timber.d("updateFrame");
+        //Timber.d("updateFrame");
         synchronized(this)
         {
             if (updateSurface)
@@ -96,17 +96,16 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
             throw new RuntimeException(op + ": glError " + error);
         }
     }
-    public Actor(Context context, MeshView view, String manifestUrl, String uvolUrl, String videoUrl){
+    public Actor(Context context, MeshView view, String manifestUrl, String uvolUrl, MediaPlayer player){
         this.manifestUrl = manifestUrl;
         this.uvolUrl = uvolUrl;
-        this.videoUrl = videoUrl;
-        this.mediaPlayer = MediaPlayer.create(context, Uri.parse(videoUrl));
+        mediaPlayer = player;
+
         this.context = context;
         this.view = view;
         this.mesh = null;
 
         LoadManifest();
-        LoadVideo();
         LoadUvol();
         Matrix.setIdentityM(mSTMatrix, 0);
     }
@@ -129,14 +128,21 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         mediaPlayer.setSurface(surface);
         mediaPlayer.setScreenOnWhilePlaying(true);
         surface.release();
+
         mediaPlayer.setLooping(true);
         mediaPlayer.setOnPreparedListener(this);
+
+        try {
+            mediaPlayer.prepareAsync();
+        } catch (Exception t) {
+            Timber.e("media player prepare failed "+t);
+            t.printStackTrace();
+        }
 
         synchronized(this) {
             updateSurface = false;
         }
 
-        Play();
     }
     public void LoadManifest(){
         Timber.d("LoadManifest");
@@ -209,19 +215,6 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         }
     }
 
-    public void LoadVideo(){
-        Timber.d("LoadVideo");
-//        try {
-////            this.mediaPlayer.setDataSource(context, Uri.parse(this.videoUrl));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-        //Set loop play
-
-
-
-
-    }
 
     @Override
     public void onPrepared(MediaPlayer player) {
@@ -281,7 +274,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     @Override
     public synchronized void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        Timber.d("onFrameAvailable");
+        //Timber.d("onFrameAvailable");
         this.setCurrentFrameFromTime();
         if(lastFrame != currentFrame){
             updateSurface = true;
