@@ -119,10 +119,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         actor.updateFrame();
 
         if(actor.mesh != null) {
-            sceneShader.setMesh(actor.mesh);
-
-            sceneShader.bindData();
-            sceneShader.unbindData();
+            sceneShader.draw(actor.mesh);
 //            Log.v("WORKS", "actor != null && actor.mesh != null ");
 //            Log.v("actor != null", actor.toString());
 //            Log.v("actor.mesh", actor.mesh.toString());

@@ -89,4 +89,11 @@ public final class SceneShader extends Shader {
         return this;
     }
 
+    public void draw(Mesh mesh)
+    {
+        setMesh(mesh);
+        bindData();
+        unbindData();
+    }
+
 }
