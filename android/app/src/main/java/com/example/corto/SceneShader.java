@@ -21,6 +21,8 @@ public final class SceneShader extends Shader {
     public SceneShader(Context context) {
         super(context,"vs_scene.glsl", "fs_scene.glsl");
         GLES20.glUseProgram(getProgram());
+        checkGlError("glUseProgram");
+
         aPosition = getAttrib("aPosition");
         aNormal = getAttrib("aNormal");
         aTexCoords = getAttrib("aTexCoords");
@@ -29,26 +31,42 @@ public final class SceneShader extends Shader {
         uViewPos = getUniform("uViewPos");
     }
 
+    protected void EnableVertexAttribArray(int attrib, String name)
+    {
+        GLES20.glEnableVertexAttribArray(attrib);
+        checkGlError("glEnableVertexAttribArray "+name);
+    }
+
     @Override
     public void bindData() {
         GLES20.glUseProgram(getProgram());
-        GLES20.glEnableVertexAttribArray(aPosition);
-        GLES20.glEnableVertexAttribArray(aNormal);
-        GLES20.glEnableVertexAttribArray(aTexCoords);
+        checkGlError("glUseProgram");
+
+        EnableVertexAttribArray(aPosition,"aPosition");
+        //EnableVertexAttribArray(aNormal,"aNormal");
+        EnableVertexAttribArray(aTexCoords, "aTexCoords");
+
         long meshSize = mesh.getSizeVertex();
         FloatBuffer buffer = mesh.getVertexBuffer();
         GLES20.glVertexAttribPointer(aPosition, mesh.getSizeVertex(), GLES20.GL_FLOAT, false, 0, mesh.getVertexBuffer());
-        GLES20.glVertexAttribPointer(aNormal, 3, GLES20.GL_FLOAT, false, 0, mesh.getNormalBuffer());
+        checkGlError("glVertexAttribPointer aPosition");
+        //GLES20.glVertexAttribPointer(aNormal, 3, GLES20.GL_FLOAT, false, 0, mesh.getNormalBuffer());
+        //checkGlError("glVertexAttribPointer aNormal");
         GLES20.glVertexAttribPointer(aTexCoords, 2, GLES20.GL_FLOAT, false, 0, mesh.getTexCoordsBuffer());
+        checkGlError("glVertexAttribPointer aTexCoords");
+
         GLES20.glUniformMatrix4fv(uMMatrix, 1, false, mMatrix, 0);
         GLES20.glUniformMatrix4fv(uMVPMatrix, 1, false, mvpMatrix, 0);
         GLES20.glUniform3f(uViewPos, viewPos.x, viewPos.y, viewPos.z);
+
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, mesh.getIndicesBuffer());
+        checkGlError("glDraw");
     }
 
     @Override
     public void unbindData() {
         GLES20.glDisableVertexAttribArray(aPosition);
-        GLES20.glDisableVertexAttribArray(aNormal);
+        //GLES20.glDisableVertexAttribArray(aNormal);
     }
 
     public SceneShader setMMatrix(float[] mMatrix){

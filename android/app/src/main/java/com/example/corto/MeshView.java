@@ -122,7 +122,6 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
             sceneShader.setMesh(actor.mesh);
 
             sceneShader.bindData();
-            GLES20.glDrawElements(GLES20.GL_TRIANGLES, actor.mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, actor.mesh.getIndicesBuffer());
             sceneShader.unbindData();
 //            Log.v("WORKS", "actor != null && actor.mesh != null ");
 //            Log.v("actor != null", actor.toString());
