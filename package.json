@@ -1,6 +1,6 @@
 {
   "name": "volumetric",
-  "version": "0.2.20",
+  "version": "0.2.21",
   "repository": {
     "type": "git",
     "url": "git://github.com/XRFoundation/volumetric.git"
