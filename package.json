@@ -11,7 +11,6 @@
   "npmClient": "yarn",
   "jest": "ts-jest",
   "scripts": {
-    "check-errors": "tsc --noemit",
     "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
   "author": "XRFoundation",
