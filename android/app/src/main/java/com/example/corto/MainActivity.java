@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = binding.sampleText;
         tv.setText("Static text");
 
-        String volumetricPath = "liamu.uvol";
+        String volumetricPath = "liam.uvol";
         String manifestPath = "liam.manifest";
 
         setContentView(view);
