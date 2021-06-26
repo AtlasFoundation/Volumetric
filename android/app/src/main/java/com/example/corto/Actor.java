@@ -51,7 +51,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     private InputStream uvolInputStream;
     private int currentUvolPosition = 0;
 
-    private float[] mSTMatrix = new float[16];
+    public float[] mSTMatrix = new float[16];
     private int mTextureID;
 
     public boolean isPrepared = false;
@@ -67,11 +67,12 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     public void updateFrame()
     {
-        //Timber.d("updateFrame");
+
         synchronized(this)
         {
             if (updateSurface)
             {
+                //Timber.d("updateFrame");
                 surfaceTexture.updateTexImage();
                 surfaceTexture.getTransformMatrix(mSTMatrix);
 

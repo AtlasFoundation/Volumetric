@@ -61,7 +61,7 @@ public abstract class Shader {
         }
     }
 
-    public abstract void bindData();
+    public abstract void bindData(float[] stMmatrix);
     public abstract void unbindData();
 
     private int compile(int type, String source){
@@ -98,7 +98,7 @@ public abstract class Shader {
         int val = GLES20.glGetUniformLocation(program,name);
         checkGlError("glGetUniformLocation "+name);
         if (val == -1) {
-            Timber.e("Could not get attrib location for "+name);
+            Timber.e("Could not get uniform for "+name);
         }
         Timber.i("getUniform %s %d", name, val);
         return val;

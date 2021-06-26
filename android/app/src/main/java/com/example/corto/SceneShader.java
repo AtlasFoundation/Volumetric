@@ -14,6 +14,7 @@ public final class SceneShader extends Shader {
     private final int aTexCoords;
     private final int uMMatrix;
     private final int uMVPMatrix;
+    int uSTMMatrixHandle;
     private Mesh mesh;
     private Vector3f viewPos;
     private final int uViewPos;
@@ -29,6 +30,7 @@ public final class SceneShader extends Shader {
         uMMatrix = getUniform("uMMatrix");
         uMVPMatrix = getUniform("uMVPMatrix");
         uViewPos = getUniform("uViewPos");
+        uSTMMatrixHandle = getUniform("uSTMatrix");
     }
 
     protected void EnableVertexAttribArray(int attrib, String name)
@@ -38,7 +40,7 @@ public final class SceneShader extends Shader {
     }
 
     @Override
-    public void bindData() {
+    public void bindData(float[] stMmatrix) {
         GLES20.glUseProgram(getProgram());
         checkGlError("glUseProgram");
 
@@ -58,6 +60,8 @@ public final class SceneShader extends Shader {
         GLES20.glUniformMatrix4fv(uMMatrix, 1, false, mMatrix, 0);
         GLES20.glUniformMatrix4fv(uMVPMatrix, 1, false, mvpMatrix, 0);
         GLES20.glUniform3f(uViewPos, viewPos.x, viewPos.y, viewPos.z);
+
+        GLES20.glUniformMatrix4fv(uSTMMatrixHandle, 1, false, stMmatrix, 0);
 
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, mesh.getIndicesBuffer());
         checkGlError("glDraw");
@@ -89,10 +93,10 @@ public final class SceneShader extends Shader {
         return this;
     }
 
-    public void draw(Mesh mesh)
+    public void draw(Mesh mesh, float[] stMmatrix)
     {
         setMesh(mesh);
-        bindData();
+        bindData(stMmatrix);
         unbindData();
     }
 
