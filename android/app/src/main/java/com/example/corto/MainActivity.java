@@ -32,10 +32,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         view = new MeshView(this);
-
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
         mediaPlayer = new MediaPlayer();
 
         try {
@@ -48,13 +44,12 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        TextView tv = binding.sampleText;
-        tv.setText("Static text");
-
         String volumetricPath = "liam.uvol";
         String manifestPath = "liam.manifest";
 
         setContentView(view);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         LoadActor(manifestPath, volumetricPath);
 
     }
