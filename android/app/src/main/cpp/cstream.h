@@ -169,6 +169,7 @@ class InStream: public Stream {
 protected:
 	const uchar *buffer;
 	const uchar *pos; //for reading.
+	int size;
 
 public:
 
@@ -185,9 +186,10 @@ public:
 	int  lz4_compress(uchar *data, int size);
 #endif
 
-	void init(int /*_size*/, const uchar *_buffer) {
+	void init(int _size, const uchar *_buffer) {
 		buffer = _buffer; //I'm not lying, I won't touch it.
 		pos = buffer;
+		size = _size;
 	}
 
 	void rewind() { pos = buffer; }

@@ -105,8 +105,12 @@ void InStream::tunstall_decompress(vector<uchar> &data) {
 
 
 	int size = readUint32();
-	data.resize(size);
 	int compressed_size = readUint32();
+
+	if (compressed_size>size)
+		throw "wrong compressed size";
+
+	data.resize(size);
 	unsigned char *compressed_data = readArray<unsigned char>(compressed_size);
 
 	if(size)
