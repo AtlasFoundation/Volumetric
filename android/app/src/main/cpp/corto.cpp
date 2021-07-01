@@ -21,8 +21,8 @@ JNIEXPORT jobject Java_com_example_corto_Actor_decode (JNIEnv * env, jobject thi
     unsigned char* buf = new unsigned char[len];
     env->GetByteArrayRegion (bytes, 0, len, reinterpret_cast<jbyte*>(buf));
 
-    __android_log_write(ANDROID_LOG_DEBUG, "DECODER", "**** FIRST BYTE IS (native)");
-    __android_log_write(ANDROID_LOG_DEBUG, "DECODER", to_string(buf[0]).c_str());
+  //  __android_log_write(ANDROID_LOG_DEBUG, "DECODER", "**** FIRST BYTE IS (native)");
+ //   __android_log_write(ANDROID_LOG_DEBUG, "DECODER", to_string(buf[0]).c_str());
 
     crt::Decoder decoder = crt::Decoder(len, buf);
 
@@ -72,9 +72,9 @@ JNIEXPORT jobject Java_com_example_corto_Actor_decode (JNIEnv * env, jobject thi
 
     jobject geometryObj = env->NewObject(geometryClass, methodId, jIndex, jCoords, jNormals, jUVs);
 
-    __android_log_write(ANDROID_LOG_DEBUG, "DECODER", "to_string(index.size()).c_str()");
+   // __android_log_write(ANDROID_LOG_DEBUG, "DECODER", "to_string(index.size()).c_str()");
 
-    __android_log_write(ANDROID_LOG_DEBUG, "DECODER", to_string(index.size()).c_str());
+   // __android_log_write(ANDROID_LOG_DEBUG, "DECODER", to_string(index.size()).c_str());
 
     return geometryObj;
 
