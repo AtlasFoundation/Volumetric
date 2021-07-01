@@ -1,6 +1,7 @@
 package com.example.corto;
 
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -17,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -41,14 +43,14 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     public Mesh mesh;
     public String manifestUrl;
-    public String uvolUrl;
+    public int uvolId;
     public String videoUrl;
     public SurfaceTexture surfaceTexture;
     public MediaPlayer mediaPlayer;
     private JSONArray frameData;
     private Context context;
     public boolean updateSurface;
-    private InputStream uvolInputStream;
+    private FileInputStream uvolInputStream;
     private int currentUvolPosition = 0;
 
     public float[] mSTMatrix = new float[16];
@@ -76,7 +78,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
                 surfaceTexture.updateTexImage();
                 surfaceTexture.getTransformMatrix(mSTMatrix);
 
-//                GetActorDataForFrame();
+                GetActorDataForFrame();
                 setLastFrameToCurrentFrame();
                 updateSurface = false;
             }
@@ -88,7 +90,6 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     }
     public void setLastFrameToCurrentFrame(){
         lastFrame = currentFrame;
-        surfaceTexture.updateTexImage();
     }
     private void checkGlError(String op) {
         int error;
@@ -97,9 +98,9 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
             throw new RuntimeException(op + ": glError " + error);
         }
     }
-    public Actor(Context context, MeshView view, String manifestUrl, String uvolUrl, MediaPlayer player){
+    public Actor(Context context, MeshView view, String manifestUrl, int uvolId, MediaPlayer player){
         this.manifestUrl = manifestUrl;
-        this.uvolUrl = uvolUrl;
+        this.uvolId = uvolId;
         mediaPlayer = player;
 
         this.context = context;
@@ -121,6 +122,11 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
         Timber.d("mTextureID %d", mTextureID);
         checkGlError("glBindTexture mTextureID");
+
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
+                GLES20.GL_NEAREST);
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
+                GLES20.GL_LINEAR);
 
         surfaceTexture = new SurfaceTexture(mTextureID);
         surfaceTexture.setOnFrameAvailableListener(this);
@@ -168,11 +174,14 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     public void LoadUvol(){
         // TODO: Open an input stream, set position to 0, and allocate input stream
         try {
-            uvolInputStream = context.getAssets().open(this.uvolUrl);
-        } catch (IOException e) {
+            AssetFileDescriptor afd = context.getResources().openRawResourceFd(uvolId);
+            uvolInputStream = afd.createInputStream();
+            currentUvolPosition = 0;
+           // afd.close();
+        } catch (Exception e) {
+            Timber.e("load uvol fail "+e);
             e.printStackTrace();
         }
-
     }
 
     public void GetActorDataForFrame(){
@@ -187,28 +196,27 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 //            int vertices = frameData.getInt("vertices");
 //            int faces = frameData.getInt("faces");
 
-            Timber.d("length " + length);
-            Timber.d("startBytePosition " + startBytePosition);
+            Timber.d("startBytePosition %d currentpos %d", startBytePosition, currentUvolPosition);
 
+            Timber.d("lenth %d, available %d", length, uvolInputStream.available());
 
-            Timber.d("available " + uvolInputStream.available());
-
+            long skip = 0;
             if(currentUvolPosition > startBytePosition){
-                uvolInputStream = context.getAssets().open(this.uvolUrl);
-                uvolInputStream.skip(startBytePosition);
-            } else {
-                uvolInputStream.skip(startBytePosition - currentUvolPosition);
+                uvolInputStream.close();
+                LoadUvol();
+                skip = uvolInputStream.skip(startBytePosition);
+           } else {
+                skip = uvolInputStream.skip(startBytePosition - currentUvolPosition);
             }
+            Timber.d("skip %d", skip);
 
-            currentUvolPosition = startBytePosition;
 
             byte[] bytes = new byte[length];
             uvolInputStream.read(bytes, 0, length);
-            Timber.d("BYTES ARE " + length);
+            currentUvolPosition = startBytePosition+length;
 
             this.mesh = decode(bytes);
             this.mesh.init();
-            Timber.d("MESH INITED ");
 
         } catch (JSONException | IOException e) {
             Timber.e("GetActorDataForFrame "+e);
@@ -275,9 +283,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
     @Override
     public synchronized void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        //Timber.d("onFrameAvailable");
-        this.setCurrentFrameFromTime();
-        if(lastFrame != currentFrame){
+        Timber.d("onFrameAvailable");
+        setCurrentFrameFromTime();
+        //if(lastFrame != currentFrame)
+        {
             updateSurface = true;
        }
     }

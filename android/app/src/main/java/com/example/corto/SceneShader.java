@@ -14,6 +14,7 @@ public final class SceneShader extends Shader {
     private final int aTexCoords;
     private final int uMMatrix;
     private final int uMVPMatrix;
+    private final int uTextureSamplerLocation;
     int uSTMMatrixHandle;
     private Mesh mesh;
     private Vector3f viewPos;
@@ -31,6 +32,7 @@ public final class SceneShader extends Shader {
         uMVPMatrix = getUniform("uMVPMatrix");
         uViewPos = getUniform("uViewPos");
         uSTMMatrixHandle = getUniform("uSTMatrix");
+        uTextureSamplerLocation=getUniform("uTexture");
     }
 
     protected void EnableVertexAttribArray(int attrib, String name)
@@ -62,6 +64,7 @@ public final class SceneShader extends Shader {
         GLES20.glUniform3f(uViewPos, viewPos.x, viewPos.y, viewPos.z);
 
         GLES20.glUniformMatrix4fv(uSTMMatrixHandle, 1, false, stMmatrix, 0);
+        GLES20.glUniform1i(uTextureSamplerLocation,0);
 
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, mesh.getIndicesBuffer());
         checkGlError("glDraw");

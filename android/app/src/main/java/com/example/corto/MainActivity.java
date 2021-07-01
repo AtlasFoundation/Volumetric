@@ -32,6 +32,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         view = new MeshView(this);
+        setContentView(view);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        init();
+    }
+
+    protected void init()
+    {
         mediaPlayer = new MediaPlayer();
 
         try {
@@ -47,13 +55,8 @@ public class MainActivity extends AppCompatActivity {
         String volumetricPath = "liam.uvol";
         String manifestPath = "liam.manifest";
 
-        setContentView(view);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        LoadActor(manifestPath, volumetricPath);
-
+        LoadActor(manifestPath, R.raw.liam);
     }
-
     public void PlayActor(){
         if(view.actor != null)
             view.actor.Play();
@@ -63,12 +66,12 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void LoadActor(String manifestUrl, String uvolUrl){
+    public void LoadActor(String manifestUrl, int uvolId){
         if(view.actor != null){
             view.actor.Destroy();
         }
 
-        view.actor = new Actor(this, view, manifestUrl, uvolUrl, mediaPlayer);
+        view.actor = new Actor(this, view, manifestUrl, uvolId, mediaPlayer);
     }
 
 
