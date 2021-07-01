@@ -1,25 +1,20 @@
 package com.example.corto;
 
 import android.content.Context;
-import android.graphics.SurfaceTexture;
+import android.media.MediaPlayer;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
-import android.view.Surface;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
+
+import androidx.lifecycle.LifecycleObserver;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-import javax.microedition.khronos.opengles.GL11Ext;
 
 import timber.log.Timber;
 
-import static android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
 
 public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
@@ -38,6 +33,11 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         setEGLContextClientVersion(2);
         setRenderer(this);
         setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
+    }
+
+    public void init(String manifestUrl, int uvolId, int videoId )
+    {
+        actor = new Actor(getContext(), this, manifestUrl, uvolId, videoId);
     }
 
     @Override
@@ -75,59 +75,26 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         Matrix.multiplyMM(mvpMatrix, 0, cameraPerspective.getVpMatrix(), 0, mMatrix, 0);
         sceneShader.setMMatrix(mMatrix);
         sceneShader.setMvpMatrix(mvpMatrix);
+
         if(actor != null){
             if(actor.isPrepared){
                 actor.isPrepared = false;
-//
-//                final int[] textures = new int[1];
-//                //Generate a texture to textures, and return a non-zero value if the generation is successful
-//                GLES20.glGenTextures(1, textures, 0);
-//
-//
-//                if (textures[0]==0){
-//                    Log.d("ERROR","Failed to generate texture object");
-//
-//                }
-//                //Bind the texture we just generated to OpenGL texture
-//                GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, textures[0]);
-//
-//                actor.surfaceTexture.attachToGLContext(textures[0]);
-
-
-                //Used to set texture filtering method, GL_TEXTURE_MIN_FILTER is the filtering method when zooming out, GL_TEXTURE_MAG_FILTER is zooming in
-//                GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
-//                        GLES20.GL_NEAREST);
-//                GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
-//                        GLES20.GL_LINEAR);
-
-//                int textureId = textures[0];
-//
-//                //SurfaceTexture is to get data of a new frame from the video stream and the camera data stream. Use updateTexImage to get the new data.
-//                //Use textureId to create a SurfaceTexture
-//                actor.surfaceTexture = new SurfaceTexture(textureId);
-//                //Listening for a new frame data
-//                actor.surfaceTexture.setOnFrameAvailableListener(actor);
-//                //Use surfaceTexture to create a Surface
-//                Surface surface = new Surface(actor.surfaceTexture);
-//                //Set the surface as the output surface of the mediaPlayer
-//                actor.mediaPlayer.setSurface(surface);
-//                surface.release();
-
                 Timber.d("Actor onCreate END");
             }
-
-        actor.updateFrame();
-
-        if(actor.mesh != null) {
-            sceneShader.draw(actor.mesh, actor.mSTMatrix);
-//            Log.v("WORKS", "actor != null && actor.mesh != null ");
-//            Log.v("actor != null", actor.toString());
-//            Log.v("actor.mesh", actor.mesh.toString());
-        }
+            actor.updateFrame();
+            if(actor.mesh != null)
+                sceneShader.draw(actor.mesh, actor.mSTMatrix);
         } else {
             actor.currentFrame = 0;
             Log.v("DOESNT WORK", "actor != null && actor.mesh != null ");
         }
 
     }
+
+    public LifecycleObserver getLifeCycleObserver()
+    {
+        return actor;
+    }
+
+
 }

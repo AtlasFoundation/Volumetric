@@ -3,16 +3,16 @@ package com.example.corto;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.SurfaceTexture;
-import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceHolder;
+
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,15 +22,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
 import timber.log.Timber;
 
 import static android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
 
-public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener {
-    private static final String TAG = "CORTO_OPENGLES";
+public class Actor implements SurfaceTexture.OnFrameAvailableListener,
+        MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, LifecycleObserver {
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -44,7 +42,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
     public Mesh mesh;
     public String manifestUrl;
     public int uvolId;
-    public String videoUrl;
+    int videoId;
     public SurfaceTexture surfaceTexture;
     public MediaPlayer mediaPlayer;
     private JSONArray frameData;
@@ -98,10 +96,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
             throw new RuntimeException(op + ": glError " + error);
         }
     }
-    public Actor(Context context, MeshView view, String manifestUrl, int uvolId, MediaPlayer player){
+    public Actor(Context context, MeshView view, String manifestUrl, int uvolId, int videoId){
         this.manifestUrl = manifestUrl;
         this.uvolId = uvolId;
-        mediaPlayer = player;
+        this.videoId = videoId;
 
         this.context = context;
         this.view = view;
@@ -109,6 +107,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
 
         LoadManifest();
         LoadUvol();
+        LoadVideo();
         Matrix.setIdentityM(mSTMatrix, 0);
     }
 
@@ -184,6 +183,21 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         }
     }
 
+    public void LoadVideo(){
+
+        mediaPlayer = new MediaPlayer();
+
+        try {
+            AssetFileDescriptor afd = context.getResources().openRawResourceFd(videoId);
+            mediaPlayer.setDataSource(
+                    afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+        } catch (Exception e) {
+            Timber.e("open video fail "+e);
+            e.printStackTrace();
+        }
+    }
+
     public void GetActorDataForFrame(){
         Timber.d("GetActorDataForFrame %d",currentFrame);
         // TODO: Get start and end lengths from manifest
@@ -244,13 +258,10 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         mediaPlayer.start();
     }
 
-    public void Stop(){
-        mediaPlayer.stop();
-    }
-
-    public void Destroy(){
-        mediaPlayer.reset();
+    public void destroy(){
+        Timber.d("destroy");
         try {
+            mediaPlayer.release();
             uvolInputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -259,26 +270,26 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener, MediaPlay
         // Deallocate input stream
     }
 
-    public static int loadTexture(){
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    public void onResume() {
+        Timber.d("onResume");
+    }
 
-        final int[] textures = new int[1];
-        //Generate a texture to textures, and return a non-zero value if the generation is successful
-        GLES20.glGenTextures(1, textures, 0);
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+    public void onPause() {
+        Timber.d("onPause");
+        mediaPlayer.pause();
+    }
 
-        if (textures[0]==0){
-            Log.d(TAG_ACTOR,"Failed to generate texture object");
-            return 0;
-        }
-        //Bind the texture we just generated to OpenGL 3D texture, and tell OpenGL that this is a 3D texture
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    public void onStop() {
+        Timber.d("onStop");
+        destroy();
+    }
 
-        //Used to set texture filtering method, GL_TEXTURE_MIN_FILTER is the filtering method when zooming out, GL_TEXTURE_MAG_FILTER is zooming in
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
-                GLES20.GL_NEAREST);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER,
-                GLES20.GL_LINEAR);
+    public void createPlayer(){
 
-        return textures[0];
+
     }
 
     @Override
