@@ -37,7 +37,7 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
 
     public void init(String manifestUrl, int uvolId, int videoId )
     {
-        actor = new Actor(getContext(), this, manifestUrl, uvolId, videoId);
+        actor = new Actor(getContext(), manifestUrl, uvolId, videoId);
     }
 
     @Override
@@ -77,18 +77,10 @@ public class MeshView extends GLSurfaceView implements GLSurfaceView.Renderer {
         sceneShader.setMvpMatrix(mvpMatrix);
 
         if(actor != null){
-            if(actor.isPrepared){
-                actor.isPrepared = false;
-                Timber.d("Actor onCreate END");
-            }
             actor.updateFrame();
             if(actor.mesh != null)
                 sceneShader.draw(actor.mesh, actor.mSTMatrix);
-        } else {
-            actor.currentFrame = 0;
-            Log.v("DOESNT WORK", "actor != null && actor.mesh != null ");
         }
-
     }
 
     public LifecycleObserver getLifeCycleObserver()

@@ -35,10 +35,6 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
         System.loadLibrary("libcorto");
     }
 
-    private static final String TAG_ACTOR = "ACTOR_CLASS";
-    private final MeshView view;
-    private int textureId;
-
     public Mesh mesh;
     public String manifestUrl;
     public int uvolId;
@@ -96,13 +92,12 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
             throw new RuntimeException(op + ": glError " + error);
         }
     }
-    public Actor(Context context, MeshView view, String manifestUrl, int uvolId, int videoId){
+    public Actor(Context context, String manifestUrl, int uvolId, int videoId){
         this.manifestUrl = manifestUrl;
         this.uvolId = uvolId;
         this.videoId = videoId;
 
         this.context = context;
-        this.view = view;
         this.mesh = null;
 
         LoadManifest();
@@ -210,9 +205,8 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
 //            int vertices = frameData.getInt("vertices");
 //            int faces = frameData.getInt("faces");
 
-            Timber.d("startBytePosition %d currentpos %d", startBytePosition, currentUvolPosition);
-
-            Timber.d("lenth %d, available %d", length, uvolInputStream.available());
+            //Timber.d("startBytePosition %d currentpos %d", startBytePosition, currentUvolPosition);
+            //Timber.d("lenth %d, available %d", length, uvolInputStream.available());
 
             long skip = 0;
             if(currentUvolPosition > startBytePosition){
@@ -222,7 +216,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
            } else {
                 skip = uvolInputStream.skip(startBytePosition - currentUvolPosition);
             }
-            Timber.d("skip %d", skip);
+            //Timber.d("skip %d", skip);
 
 
             byte[] bytes = new byte[length];
@@ -273,6 +267,8 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     public void onResume() {
         Timber.d("onResume");
+        if (mediaPlayer!=null && isPrepared)
+            Play();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
@@ -281,20 +277,16 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
         mediaPlayer.pause();
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    public void onStop() {
-        Timber.d("onStop");
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    public void onDestroy() {
+        Timber.d("onDestroy");
         destroy();
     }
 
-    public void createPlayer(){
-
-
-    }
 
     @Override
     public synchronized void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        Timber.d("onFrameAvailable");
+        //Timber.d("onFrameAvailable");
         setCurrentFrameFromTime();
         //if(lastFrame != currentFrame)
         {
