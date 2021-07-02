@@ -5,6 +5,8 @@ import android.opengl.GLES20;
 
 import java.nio.FloatBuffer;
 
+import static android.opengl.GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
+
 public final class SceneShader extends Shader {
 
     private float[] mMatrix;
@@ -42,9 +44,12 @@ public final class SceneShader extends Shader {
     }
 
     @Override
-    public void bindData(float[] stMmatrix) {
+    public void bindData() {
         GLES20.glUseProgram(getProgram());
         checkGlError("glUseProgram");
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, mesh.getTextureId());
 
         EnableVertexAttribArray(aPosition,"aPosition");
         //EnableVertexAttribArray(aNormal,"aNormal");
@@ -63,7 +68,7 @@ public final class SceneShader extends Shader {
         GLES20.glUniformMatrix4fv(uMVPMatrix, 1, false, mvpMatrix, 0);
         GLES20.glUniform3f(uViewPos, viewPos.x, viewPos.y, viewPos.z);
 
-        GLES20.glUniformMatrix4fv(uSTMMatrixHandle, 1, false, stMmatrix, 0);
+        GLES20.glUniformMatrix4fv(uSTMMatrixHandle, 1, false, mesh.getStMatrix(), 0);
         GLES20.glUniform1i(uTextureSamplerLocation,0);
 
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, mesh.getIndicesBuffer().capacity(), GLES20.GL_UNSIGNED_INT, mesh.getIndicesBuffer());
@@ -96,10 +101,12 @@ public final class SceneShader extends Shader {
         return this;
     }
 
-    public void draw(Mesh mesh, float[] stMmatrix)
+    public void draw(Mesh mesh)
     {
+        if(mesh == null)
+            return;
         setMesh(mesh);
-        bindData(stMmatrix);
+        bindData();
         unbindData();
     }
 

@@ -25,6 +25,9 @@ public class Mesh {
     protected Vector3f position;
     protected Vector3f rotation;
     protected float scale;
+    protected int textureId;
+    protected float[] stMatrix;
+
 
     public Mesh(){
         this.sizeVertex = 3;
@@ -64,6 +67,12 @@ public class Mesh {
 
     public void init(){
         load();
+    }
+
+    public void setParameter(int textureId, float[] stMatrix)
+    {
+        this.textureId = textureId;
+        this.stMatrix = stMatrix;
     }
 
     private void load(){
@@ -133,5 +142,14 @@ public class Mesh {
 
     public int getNumVertices(){
         return vertices.length/sizeVertex;
+    }
+
+    public int getTextureId() {
+        return textureId;
+    }
+
+
+    public float[] getStMatrix() {
+        return stMatrix;
     }
 }

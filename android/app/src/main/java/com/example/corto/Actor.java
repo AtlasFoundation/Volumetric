@@ -61,9 +61,8 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
         currentFrame = (int)(mediaPlayer.getCurrentPosition() * this.frameRate)/1000;
     }
 
-    public boolean updateFrame()
+    public void updateFrame()
     {
-        boolean update = false;
         synchronized(this)
         {
             if (updateSurface)
@@ -72,17 +71,15 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
                 surfaceTexture.updateTexImage();
                 surfaceTexture.getTransformMatrix(mSTMatrix);
 
-                GetActorDataForFrame();
-                setLastFrameToCurrentFrame();
+                if (currentFrame!=lastFrame)
+                {
+                    GetActorDataForFrame();
+                    setLastFrameToCurrentFrame();
+                }
                 updateSurface = false;
-                update = true;
             }
         }
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, mTextureID);
-
-        return update;
 
     }
     public void setLastFrameToCurrentFrame(){
@@ -112,6 +109,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
     public void onSurfaceCreated()
     {
         Timber.d("onSurfaceCreated");
+        currentFrame = 0;
         int[] textures = new int[1];
         GLES20.glGenTextures(1, textures, 0);
         mTextureID = textures[0];
@@ -226,8 +224,9 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
             uvolInputStream.read(bytes, 0, length);
             currentUvolPosition = startBytePosition+length;
 
-            this.mesh = decode(bytes);
-            this.mesh.init();
+            mesh = decode(bytes);
+            mesh.init();
+            mesh.setParameter(mTextureID, mSTMatrix);
 
         } catch (JSONException | IOException e) {
             Timber.e("GetActorDataForFrame "+e);

@@ -61,7 +61,7 @@ public abstract class Shader {
         }
     }
 
-    public abstract void bindData(float[] stMmatrix);
+    public abstract void bindData();
     public abstract void unbindData();
 
     private int compile(int type, String source){
