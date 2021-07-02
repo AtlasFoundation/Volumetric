@@ -54,16 +54,16 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
 
     public float frameRate = 30;
 
-    public int currentFrame = 0;
-    public int lastFrame = -1;
+    protected int currentFrame = 0;
+    protected int lastFrame = -1;
 
     public void setCurrentFrameFromTime(){
-        this.currentFrame = (int)(mediaPlayer.getCurrentPosition() * this.frameRate)/1000;
+        currentFrame = (int)(mediaPlayer.getCurrentPosition() * this.frameRate)/1000;
     }
 
-    public void updateFrame()
+    public boolean updateFrame()
     {
-
+        boolean update = false;
         synchronized(this)
         {
             if (updateSurface)
@@ -75,11 +75,14 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
                 GetActorDataForFrame();
                 setLastFrameToCurrentFrame();
                 updateSurface = false;
+                update = true;
             }
         }
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, mTextureID);
+
+        return update;
 
     }
     public void setLastFrameToCurrentFrame(){
@@ -286,12 +289,9 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
 
     @Override
     public synchronized void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        //Timber.d("onFrameAvailable");
+        updateSurface = true;
         setCurrentFrameFromTime();
-        //if(lastFrame != currentFrame)
-        {
-            updateSurface = true;
-       }
+        //Timber.d("onFrameAvailable %d",currentFrame);
     }
 
 
