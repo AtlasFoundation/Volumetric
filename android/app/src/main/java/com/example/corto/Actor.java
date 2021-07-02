@@ -58,7 +58,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
     protected int lastFrame = -1;
 
     public void setCurrentFrameFromTime(){
-        currentFrame = (int)(mediaPlayer.getCurrentPosition() * this.frameRate)/1000;
+        currentFrame = (int)Math.ceil((mediaPlayer.getCurrentPosition() * this.frameRate)/1000);
     }
 
     public void updateFrame()
@@ -68,11 +68,11 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
             if (updateSurface)
             {
                 //Timber.d("updateFrame");
+                setCurrentFrameFromTime();
                 surfaceTexture.updateTexImage();
                 surfaceTexture.getTransformMatrix(mSTMatrix);
 
-                if (currentFrame!=lastFrame)
-                {
+                if (currentFrame != lastFrame) {
                     GetActorDataForFrame();
                     setLastFrameToCurrentFrame();
                 }
@@ -195,7 +195,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
     }
 
     public void GetActorDataForFrame(){
-        Timber.d("GetActorDataForFrame %d",currentFrame);
+        Timber.d("GetActorDataForFrame %d %d",currentFrame, mediaPlayer.getCurrentPosition());
         // TODO: Get start and end lengths from manifest
         try {
 
@@ -289,7 +289,7 @@ public class Actor implements SurfaceTexture.OnFrameAvailableListener,
     @Override
     public synchronized void onFrameAvailable(SurfaceTexture surfaceTexture) {
         updateSurface = true;
-        setCurrentFrameFromTime();
+
         //Timber.d("onFrameAvailable %d",currentFrame);
     }
 
