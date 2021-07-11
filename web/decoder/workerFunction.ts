@@ -55,6 +55,7 @@ function startHandlerLoop({
         }
       }).catch(err => { console.error("WORKERERROR: ", err) });
 
+      const outgoingBuffers = []
       const buffer = await (response as Response).arrayBuffer().catch(err => { console.error("Weird error", err) });
       for (let i = frameStart; i <= frameEnd; i++) {
         const currentFrameData = _fileHeader.frameData[i];
@@ -73,9 +74,12 @@ function startHandlerLoop({
           keyframeNumber: currentFrameData.keyframeNumber,
           bufferGeometry
         });
+        outgoingBuffers.push(bufferGeometry.position.buffer)
+        outgoingBuffers.push(bufferGeometry.uv.buffer)
+        outgoingBuffers.push(bufferGeometry.index.buffer)
       }
       // console.log("Posting payload", messages);
-      (globalThis as any).postMessage({ type: 'framedata', payload: outgoingMessages });    
+      (globalThis as any).postMessage({ type: 'framedata', payload: outgoingMessages }, outgoingBuffers);    
   }, 100);
 }
 
