@@ -40,10 +40,11 @@ function startHandlerLoop({
           frameStart: 0,
           frameEnd
         })
+        frameEnd = numberOfFrames - 1
       }
 
       const startFrameData = _fileHeader.frameData[frameStart];
-      const endFrameData = _fileHeader.frameData[!requestedOverLoop ? frameEnd : numberOfFrames - 1];
+      const endFrameData = _fileHeader.frameData[frameEnd];
       const requestStartBytePosition = startFrameData.startBytePosition;
       const requestEndBytePosition = endFrameData.startBytePosition + endFrameData.meshLength;
 
