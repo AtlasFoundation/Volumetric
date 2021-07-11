@@ -55,11 +55,26 @@ export default class Player {
   private numberOfFrames: number;
   private maxNumberOfFrames: number;
   private actorCanvas: HTMLCanvasElement;
-  currentFrame: number = -1;
+  currentFrame: number = 0;
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
 
   bufferLoop = () => {
+
+    const isOnLoop = this.lastFrameRequested < this.currentFrame;
+    
+    for (const [key, buffer] of this.meshBuffer.entries()) {
+      // If key is between current keyframe and last requested, don't delete
+      if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame)) ||
+        (!isOnLoop && key < this.currentFrame)) {
+        // console.log("Destroying", key);
+        if (buffer && buffer instanceof BufferGeometry) {
+          buffer?.dispose();
+        }
+        this.meshBuffer.delete(key);
+      }
+    }
+
     const minimumBufferLength = this.targetFramesToRequest * 2;
     const meshBufferHasEnoughToPlay = this.meshBuffer.size >= minimumBufferLength;
 
@@ -84,25 +99,6 @@ export default class Player {
         }
       }
     }
-
-    const oldFrames = [];
-    this.meshBuffer.forEach((value, key) => {
-      // If key is between current keyframe and last requested, don't delete
-      const isOnLoop = this.lastFrameRequested < this.currentFrame;
-
-      if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame)) ||
-        (!isOnLoop && key < this.currentFrame)) {
-        // console.log("Destroying", key);
-        oldFrames.push(key);
-      }
-    })
-    oldFrames.forEach(frameNumber => {
-      const buffer = this.meshBuffer.get(frameNumber);
-      if (buffer && buffer instanceof BufferGeometry) {
-        buffer?.dispose();
-      }
-      this.meshBuffer.delete(frameNumber);
-    })
 
     requestAnimationFrame(() => this.bufferLoop());
   }
@@ -215,7 +211,8 @@ export default class Player {
 
 
     const handleFrameData = (messages) => {
-      messages.forEach(frameData => {
+      // console.log(`received frames ${messages[0].keyframeNumber} - ${messages[messages.length-1].keyframeNumber}`)
+      for (const frameData of messages) {
         let geometry = new BufferGeometry();
         geometry.setIndex(
           new Uint32BufferAttribute(frameData.bufferGeometry.index, 1)
@@ -230,7 +227,7 @@ export default class Player {
         );
 
         this.meshBuffer.set(frameData.keyframeNumber, geometry );
-      })
+      }
 
       if (typeof this.onMeshBuffering === "function") {
         const minimumBufferLength = this.targetFramesToRequest * 2;
