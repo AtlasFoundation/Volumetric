@@ -8,6 +8,9 @@
   "engines": {
     "yarn": ">= 0.18.0"
   },
+  "files": [
+    "web"
+  ],
   "npmClient": "yarn",
   "jest": "ts-jest",
   "scripts": {
