@@ -1,6 +1,6 @@
 {
   "name": "volumetric",
-  "version": "0.2.20",
+  "version": "0.2.25",
   "repository": {
     "type": "git",
     "url": "git://github.com/XRFoundation/volumetric.git"
@@ -8,10 +8,12 @@
   "engines": {
     "yarn": ">= 0.18.0"
   },
+  "files": [
+    "web"
+  ],
   "npmClient": "yarn",
   "jest": "ts-jest",
   "scripts": {
-    "check-errors": "tsc --noemit",
     "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
   "author": "XRFoundation",
@@ -24,11 +26,13 @@
   "devDependencies": {
     "@babel/cli": "7.14.5",
     "@babel/core": "7.14.6",
-    "@types/three": "0.129.1"
+    "@types/three": "0.130.0"
   },
   "dependencies": {
     "shelljs": "0.8.4",
-    "three": "0.129.0",
     "xmlhttprequest": "1.8.0"
+  },
+  "peerDependencies": {
+    "three": ">0.130.0"
   }
 }

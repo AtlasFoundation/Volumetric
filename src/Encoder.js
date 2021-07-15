@@ -13,8 +13,8 @@
 import glob from 'glob';
 import fs from 'fs';
 import THREE from 'three';
-import "../libs/THREECORTOLoader.js"
-import CortoDecoder from '../libs/cortodecoder.js';
+import "./libs/THREECORTOLoader.js"
+import CortoDecoder from './libs/cortodecoder.js';
 import HttpRequest from 'xmlhttprequest';
 import shell from 'shelljs';
 import path from 'path';

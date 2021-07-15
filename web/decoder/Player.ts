@@ -41,6 +41,7 @@ export default class Player {
   private _video: HTMLVideoElement | AdvancedHTMLVideoElement = null;
   private _videoTexture = null;
   private meshBuffer: Map<number, BufferGeometry> = new Map();
+  private meshBufferRequested: Map<number, boolean> = new Map();
   private _worker: Worker;
   private onMeshBuffering: onMeshBufferingCallback | null = null;
   private onFrameShow: onFrameShowCallback | null = null;
@@ -56,55 +57,65 @@ export default class Player {
   private maxNumberOfFrames: number;
   private actorCanvas: HTMLCanvasElement;
   currentFrame: number = -1;
-  lastFrameRequested: number = 0;
-  targetFramesToRequest: number = 30;
+  lastFrameRequested: number = -1;
+  targetFramesToRequest: number;
+  minimumBufferLength = 400
 
   bufferLoop = () => {
-    const minimumBufferLength = this.targetFramesToRequest * 2;
-    const meshBufferHasEnoughToPlay = this.meshBuffer.size >= minimumBufferLength;
 
-    if (meshBufferHasEnoughToPlay) {
+    const minimumBufferLength = Math.min(this.minimumBufferLength, this.numberOfFrames);
+    const isOnLoop = this.lastFrameRequested + 1 < this.currentFrame;
+  
+    for (const [key, buffer] of this.meshBuffer.entries()) {
+      // If key is between current keyframe and last requested, don't delete
+      if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame - 10)) ||
+        (!isOnLoop && key < this.currentFrame - 10)) {
+        // console.log("Destroying", key);
+        if (buffer && buffer instanceof BufferGeometry) {
+          buffer?.dispose();
+        }
+        this.meshBuffer.delete(key);
+      }
+    }
+
+    const meshBufferHasEnoughToPlay = this.meshBuffer.size >= minimumBufferLength
+    const ammountLeftToPlay = isOnLoop ? 
+      this.numberOfFrames - this.currentFrame + this.lastFrameRequested :
+      this.lastFrameRequested - this.currentFrame
+
+    if (meshBufferHasEnoughToPlay && this.meshBuffer.has(this.currentFrame)) {
       if(this._video.paused && this.hasPlayed)
         this._video.play();
     }
-    else {
-      if (moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
-        const newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest) % this.numberOfFrames;
-        const payload = {
-          frameStart: this.lastFrameRequested,
-          frameEnd: newLastFrame
-        }
-        console.log("Posting request", payload);
-        this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
-        this.lastFrameRequested = newLastFrame;
+    else if (ammountLeftToPlay < this.minimumBufferLength) {
+      const newFirstFrame = (this.lastFrameRequested + 1) % this.numberOfFrames
+      const newLastFrame = (this.lastFrameRequested + this.targetFramesToRequest) % this.numberOfFrames;
+      const payload = {
+        frameStart: newFirstFrame,
+        frameEnd: newLastFrame
+      }
+      if (payload.frameEnd < payload.frameStart) {
+        payload.frameEnd = this.numberOfFrames - 1 
+      }
+      this.lastFrameRequested = payload.frameEnd
+      if (this.meshBuffer.has(payload.frameStart) && this.meshBuffer.has(payload.frameEnd)) {
+        return
+      }
+      // console.log("Posting request", payload);
+      // for (let i=payload.frameStart; i <= payload.frameEnd) {
 
-        if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
-          // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
-          this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
-        }
+      // }
+      // this.meshBufferRequested.set()
+      this._worker.postMessage({ type: "request", payload }); // Send data to our worker.;
+
+      if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
+        const minimumBufferLength = Math.min(this.minimumBufferLength, this.numberOfFrames);
+        console.log('currentFrame', this.currentFrame, 'buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
+        this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
       }
     }
 
-    const oldFrames = [];
-    this.meshBuffer.forEach((value, key) => {
-      // If key is between current keyframe and last requested, don't delete
-      const isOnLoop = this.lastFrameRequested < this.currentFrame;
-
-      if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame)) ||
-        (!isOnLoop && key < this.currentFrame)) {
-        // console.log("Destroying", key);
-        oldFrames.push(key);
-      }
-    })
-    oldFrames.forEach(frameNumber => {
-      const buffer = this.meshBuffer.get(frameNumber);
-      if (buffer && buffer instanceof BufferGeometry) {
-        buffer?.dispose();
-      }
-      this.meshBuffer.delete(frameNumber);
-    })
-
-    requestAnimationFrame(() => this.bufferLoop());
+    // requestAnimationFrame(() => this.bufferLoop());
   }
 
   hasPlayed = false;
@@ -117,7 +128,7 @@ export default class Player {
                 manifestFilePath = null,
                 meshFilePath,
                 videoFilePath,
-                targetFramesToRequest = 90,
+                targetFramesToRequest = 40,
                 frameRate = 30,
                 loop = true,
                 scale = 1,
@@ -206,18 +217,20 @@ export default class Player {
     this.actorCtx.fillStyle = '#ACC';
     this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
 
-    this._videoTexture = new Texture(this.actorCtx.canvas);
+    this._videoTexture = new Texture(this.actorCanvas);
     this._videoTexture.encoding = sRGBEncoding;
     this.material = new MeshBasicMaterial({ map: this._videoTexture });
 
     this.failMaterial = new MeshBasicMaterial({ color: '#555555' });
     this.mesh = new Mesh(new PlaneBufferGeometry(0.00001, 0.00001), this.material);
     this.mesh.scale.set(this._scale, this._scale, this._scale);
+    this.mesh.visible = true
     this.scene.add(this.mesh);
 
 
     const handleFrameData = (messages) => {
-      messages.forEach(frameData => {
+      // console.log(`received frames ${messages[0].keyframeNumber} - ${messages[messages.length-1].keyframeNumber}`)
+      for (const frameData of messages) {
         let geometry = new BufferGeometry();
         geometry.setIndex(
           new Uint32BufferAttribute(frameData.bufferGeometry.index, 1)
@@ -232,12 +245,12 @@ export default class Player {
         );
 
         this.meshBuffer.set(frameData.keyframeNumber, geometry );
-      })
+      }
 
       if (typeof this.onMeshBuffering === "function") {
-        const minimumBufferLength = this.targetFramesToRequest * 2;
+        const minimumBufferLength = Math.min(this.minimumBufferLength, this.numberOfFrames);
         // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
-        this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
+        this.onMeshBuffering(this.meshBuffer.size / this.minimumBufferLength);
       }
     }
 
@@ -245,9 +258,9 @@ export default class Player {
       switch (e.data.type) {
         case 'initialized':
           console.log("Worker initialized");
-          Promise.resolve().then(() => {
-            this.bufferLoop();
-          });
+          // Promise.resolve().then(() => {
+          //   this.bufferLoop();
+          // });
           break;
         case 'framedata':
           Promise.resolve().then(() => {
@@ -288,6 +301,8 @@ export default class Player {
 
     // TODO: handle paused state
     this.processFrame(cb);
+    this.bufferLoop()
+    // Promise.resolve().then(this.bufferLoop)
   }
 
   /**
@@ -296,16 +311,23 @@ export default class Player {
    * @param cb
    */
   processFrame(cb?: onRenderingCallback) {
-    const frameToPlay = this.getCurrentFrameNumber();
+    const frameToPlay = this.getCurrentFrameNumber(); 
 
     if (frameToPlay > this.numberOfFrames) {
       console.warn('video texture is not ready? frameToPlay:', frameToPlay);
       return;
     }
 
+    if (this.currentFrame > 0 && frameToPlay === 0) {
+      // error getting current frame to play ? 
+      return;
+    }
+
     if (this.currentFrame === frameToPlay) {
       return;
     }
+
+    this.currentFrame = frameToPlay;
 
     if (this.stopOnNextFrame) {
       this._video.pause();
@@ -317,6 +339,7 @@ export default class Player {
     // If keyframe changed, set mesh buffer to new keyframe
 
     if (!hasFrame) {
+      console.log('missing frame! ', frameToPlay)
       if (!this._video.paused) {
         this._video.pause();
       }
@@ -329,12 +352,11 @@ export default class Player {
       this.material.needsUpdate = true;
 
       this.mesh.material.needsUpdate = true;
+      this._videoTexture.needsUpdate = true;
 
       this.mesh.geometry = this.meshBuffer.get(frameToPlay) as BufferGeometry;
       this.mesh.geometry.attributes.position.needsUpdate = true;
       (this.mesh.geometry as any).needsUpdate = true;
-
-      this.currentFrame = frameToPlay;
 
       if (typeof this.onFrameShow === "function") {
         this.onFrameShow(frameToPlay);
@@ -345,14 +367,17 @@ export default class Player {
   }
 
   getCurrentFrameNumber():number {
+    // return Math.floor((this._video.currentTime / this._video.duration) * this.numberOfFrames)
+
     const encoderWindowWidth = this.encoderWindowSize * this.encoderByteLength;
     const encoderWindowHeight = this.encoderWindowSize / 2;
-    this.actorCtx.clearRect(0, 0, this.videoSize, this.videoSize);
+
+    // this.actorCtx.clearRect(0, 0, this.videoSize, this.videoSize);
     this.actorCtx.drawImage(this._video, 0, 0);
 
-    this.counterCtx.clearRect(0, 0, this.encoderByteLength, 1);
+    // this.counterCtx.clearRect(0, 0, this.encoderByteLength, 1);
     this.counterCtx.drawImage(
-      this.actorCtx.canvas,
+      this.actorCanvas,
       0,
       this.videoSize - encoderWindowHeight,
       encoderWindowWidth,
@@ -370,8 +395,6 @@ export default class Player {
 
     frameToPlay = Math.max(frameToPlay - 1, 0);
 
-    this._videoTexture.needsUpdate = this.currentFrame !== frameToPlay;
-
     return frameToPlay;
   }
 
@@ -383,7 +406,6 @@ export default class Player {
   play() {
     this.hasPlayed = true;
     this._video.playsInline = true;
-    this.mesh.visible = true
     this._video.play()
   }
 

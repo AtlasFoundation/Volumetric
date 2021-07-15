@@ -1,10 +1,11 @@
 #version 100
 
+#extension GL_OES_EGL_image_external : require
 precision highp float;
 
 
 uniform vec3 uViewPos;
-uniform sampler2D uTexture;
+uniform samplerExternalOES uTexture;
 uniform int uIsTextured;
 varying vec4 vColor;
 varying vec4 vPosition;
@@ -17,7 +18,8 @@ const vec3 lightSpecularColor = vec3(1.0,1.0,1.0);
 
 
 vec4 getColor(){
-    if (uIsTextured != 0){
+   // if (uIsTextured != 0)
+    {
         return texture2D(uTexture,vTexCoords);
     }
     return vColor;

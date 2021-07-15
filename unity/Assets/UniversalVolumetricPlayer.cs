@@ -84,12 +84,14 @@ public class UniversalVolumetricPlayer : MonoBehaviour
 
     }
 
+    float bias = -.4f;
+
     // Update is called once per frame
     void Update()
     {
         if(videoPlayer.isPlaying){
             UnityEngine.Debug.Log(videoPlayer.time);
-            if(uvolSource != null) ReadFrame(Mathf.RoundToInt((float)videoPlayer.time * (float)frameRate));
+            if(uvolSource != null) ReadFrame(Mathf.RoundToInt(((float)videoPlayer.time * (float)frameRate) + bias));
         }
     }
 }

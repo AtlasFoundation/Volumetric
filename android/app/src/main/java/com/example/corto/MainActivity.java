@@ -4,19 +4,15 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.corto.databinding.ActivityMainBinding;
 
-import java.util.Timer;
 
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 100;
 
-    private ActivityMainBinding binding;
     MeshView view;
 
     @Override
@@ -24,38 +20,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         view = new MeshView(this);
-
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-        TextView tv = binding.sampleText;
-        tv.setText("Static text");
-
-        String videoTexturePath = "android.resource://" + getPackageName() + "/" + R.raw.liamt;
-        String volumetricPath = "liamu.uvol";
-        String manifestPath = "liam.manifest";
-
         setContentView(view);
-        LoadActor(manifestPath, volumetricPath, videoTexturePath);
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        init();
     }
 
-    public void PlayActor(){
-        if(view.actor != null)
-            view.actor.Play();
+    protected void init()
+    {
+        view.init("liam.manifest", R.raw.liam, R.raw.liamt);
+        getLifecycle().addObserver(view.getLifeCycleObserver());
     }
-
-    public void StopActor(){
-
-    }
-
-    public void LoadActor(String manifestUrl, String uvolUrl, String videoUrl){
-        if(view.actor != null){
-            view.actor.Destroy();
-        }
-
-        view.actor = new Actor(this, view, manifestUrl, uvolUrl, videoUrl);
-    }
-
 
     private boolean checkPermission() {
         int result = checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE);
