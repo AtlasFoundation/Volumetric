@@ -107,7 +107,9 @@ export default class Player {
     requestAnimationFrame(() => this.bufferLoop());
   }
 
-  hasPlayed: boolean;
+  hasPlayed = false;
+
+  stopOnNextFrame = false;
 
   constructor({
                 scene,
@@ -305,6 +307,12 @@ export default class Player {
       return;
     }
 
+    if (this.stopOnNextFrame) {
+      this._video.pause();
+      this.hasPlayed = false;
+      this.stopOnNextFrame = false;
+    }
+
     const hasFrame = this.meshBuffer.has(frameToPlay);
     // If keyframe changed, set mesh buffer to new keyframe
 
@@ -377,6 +385,11 @@ export default class Player {
     this._video.playsInline = true;
     this.mesh.visible = true
     this._video.play()
+  }
+
+  playOneFrame() {
+    this.stopOnNextFrame = true;
+    this.play();
   }
 
   dispose(): void {
