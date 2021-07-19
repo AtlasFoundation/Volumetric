@@ -1,9 +1,20 @@
 #!/bin/bash
 for file in encode/*.obj;
 do
-    ./src/corto $file;
+    if [[ -x "./corto" ]]
+        then
+            ./corto $file;
+        else
+            ./src/corto $file;
+        fi
 done
+
 for file in encode/*.ply;
 do
-    ./src/corto $file;
+    if [[ -x "./corto" ]]
+        then
+            ./corto $file;
+        else
+            ./src/corto $file;
+        fi
 done
