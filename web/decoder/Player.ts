@@ -59,6 +59,15 @@ export default class Player {
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
 
+  set paused(value){
+    if(!value) this.play();
+    else {
+      this._video.pause();
+      this.hasPlayed = false;
+      this.stopOnNextFrame = false;
+    }
+  }
+
   bufferLoop = () => {
 
     const isOnLoop = this.lastFrameRequested < this.currentFrame;
