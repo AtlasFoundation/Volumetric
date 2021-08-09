@@ -26,7 +26,7 @@
   "devDependencies": {
     "@babel/cli": "7.14.8",
     "@babel/core": "7.15.0",
-    "@types/three": "0.130.1"
+    "@types/three": "0.130.2"
   },
   "dependencies": {
     "shelljs": "0.8.4",
