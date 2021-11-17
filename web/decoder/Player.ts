@@ -93,14 +93,25 @@ export default class Player {
     }
     else {
       if (moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
-        const newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest) % this.numberOfFrames;
+        let newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest);
+        
+        if (newLastFrame >= this.numberOfFrames - 4) {
+          newLastFrame = this.numberOfFrames - 4
+        }
+        newLastFrame = newLastFrame % this.numberOfFrames
+
         const payload = {
           frameStart: this.lastFrameRequested,
           frameEnd: newLastFrame
         }
         console.log("Posting request", payload);
         this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
-        this.lastFrameRequested = newLastFrame;
+
+        if (newLastFrame >= this.numberOfFrames - 4) {
+          this.lastFrameRequested = 0;
+        } else {
+          this.lastFrameRequested = newLastFrame;
+        }
 
         if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
           // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
