@@ -109,6 +109,7 @@ CMakeFiles
 
 package-lock.json
 
+src/assets
 examples/assets
 src/worker/node_modules
 *.uvol

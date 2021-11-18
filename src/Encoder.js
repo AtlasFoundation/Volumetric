@@ -70,7 +70,7 @@ class CortosisFileCreator {
 
     shell.exec(path.dirname(import.meta.url.replace('file://', '')) + '/prepare_meshes.sh');
 
-    const dir = path.dirname(import.meta.url.replace('file://', '')) + '/' + 'encode/';
+    const dir = path.dirname(import.meta.url.replace('file://', '')) + '/' + 'assets/temps/';
 
     glob(dir + '*.crt', {}, (err, files) => {
       if (err) console.error(err);
