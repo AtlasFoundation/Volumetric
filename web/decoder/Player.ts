@@ -166,7 +166,6 @@ export default class Player {
     renderer: WebGLRenderer,
     playMode?: PlayModeEnum,
     paths: Array<String>,
-    manifestFilePath?: string,
     targetFramesToRequest?: number,
     frameRate?: number,
     loop?: boolean,
