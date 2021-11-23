@@ -14,6 +14,7 @@
   "npmClient": "yarn",
   "jest": "ts-jest",
   "scripts": {
+    "patch-npm": "npm version patch && npm publish --access public",
     "build": "tsc",
     "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
