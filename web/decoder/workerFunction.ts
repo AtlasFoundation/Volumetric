@@ -17,7 +17,6 @@ function addMessageToQueue(payload: requestPayload) {
 
 function startHandlerLoop({
   meshFilePath,
-  numberOfFrames,
   fileHeader
 }) {
   _meshFilePath = meshFilePath;
@@ -33,50 +32,45 @@ function startHandlerLoop({
         frameEnd
       } = messageQueue.shift();
 
-      const requestedOverLoop = frameEnd < frameStart;
-      if (requestedOverLoop) {
-        // We have a loop!
-        // Split the request into two
-        addMessageToQueue({
-          frameStart: 0,
-          frameEnd
-        })
-      }
+      try {
+        const startFrameData = _fileHeader.frameData[frameStart];
+        const endFrameData = _fileHeader.frameData[frameEnd];
+        const requestStartBytePosition = startFrameData.startBytePosition;
+        const requestEndBytePosition = endFrameData.startBytePosition + endFrameData.meshLength;
 
-      const startFrameData = _fileHeader.frameData[frameStart];
-      const endFrameData = _fileHeader.frameData[!requestedOverLoop ? frameEnd : numberOfFrames - 1];
-      const requestStartBytePosition = startFrameData.startBytePosition;
-      const requestEndBytePosition = endFrameData.startBytePosition + endFrameData.meshLength;
+        const outgoingMessages = []
 
-      const outgoingMessages = []
+        const response = await fetch(_meshFilePath, {
+          headers: {
+            'range': `bytes=${requestStartBytePosition}-${requestEndBytePosition}`,
+          }
+        }).catch(err => { console.error("WORKERERROR: ", err) });
 
-      const response = await fetch(_meshFilePath, {
-        headers: {
-          'range': `bytes=${requestStartBytePosition}-${requestEndBytePosition}`,
+        const buffer = await (response as Response).arrayBuffer().catch(err => { console.error("Weird error", err) });
+        for (let i = frameStart; i <= frameEnd; i++) {
+          const currentFrameData = _fileHeader.frameData[i];
+
+          const fileReadStartPosition = currentFrameData.startBytePosition - startFrameData.startBytePosition;
+          const fileReadEndPosition = fileReadStartPosition + currentFrameData.meshLength;
+
+          // Decode the geometry using Corto codec
+          const slice = (buffer as ArrayBuffer).slice(fileReadStartPosition, fileReadEndPosition);
+          const decoder = new CortoDecoder(slice);
+          const bufferGeometry = decoder.decode();
+
+          // Add to the messageQueue
+          outgoingMessages.push({
+            frameNumber: currentFrameData.frameNumber,
+            keyframeNumber: currentFrameData.keyframeNumber,
+            bufferGeometry
+          });
         }
-      }).catch(err => { console.error("WORKERERROR: ", err) });
-
-      const buffer = await (response as Response).arrayBuffer().catch(err => { console.error("Weird error", err) });
-      for (let i = frameStart; i <= frameEnd; i++) {
-        const currentFrameData = _fileHeader.frameData[i];
-
-        const fileReadStartPosition = currentFrameData.startBytePosition - startFrameData.startBytePosition;
-        const fileReadEndPosition = fileReadStartPosition + currentFrameData.meshLength;
-
-        // Decode the geometry using Corto codec
-        const slice = (buffer as ArrayBuffer).slice(fileReadStartPosition, fileReadEndPosition);
-        const decoder = new CortoDecoder(slice);
-        const bufferGeometry = decoder.decode();
-
-        // Add to the messageQueue
-        outgoingMessages.push({
-          frameNumber: currentFrameData.frameNumber,
-          keyframeNumber: currentFrameData.keyframeNumber,
-          bufferGeometry
-        });
+        (globalThis as any).postMessage({ type: 'framedata', payload: outgoingMessages }); 
+      } catch (error) {
+        (globalThis as any).postMessage({ type: 'framedata', payload: [] });
+        console.error("WORKERERROR: ", error, frameStart, frameEnd)
       }
-      // console.log("Posting payload", messages);
-      (globalThis as any).postMessage({ type: 'framedata', payload: outgoingMessages });    
+
   }, 100);
 }
 

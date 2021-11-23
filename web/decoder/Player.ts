@@ -66,14 +66,15 @@ export default class Player {
 
   private numberOfFrames: number = 0;
   private numberOfNextFrames: number = 0;
+  private isWorkerWaitNextLoop: boolean = false;
   private isWorkerReady: boolean = false;
+  private isWorkerBusy: boolean = false;
   private isVideoReady: boolean = false;
   private maxNumberOfFrames: number;
   private actorCanvas: HTMLCanvasElement;
   currentFrame: number = 0;
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
-  endFrames: number = 4;
 
   set paused(value){
     if(!value) this.play();
@@ -108,35 +109,40 @@ export default class Player {
         this._video.play();
     }
     else {
-      if (this.isWorkerReady && moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
-        let newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest);
-        
-        if (newLastFrame >= this.numberOfFrames - this.endFrames) {
-          newLastFrame = this.numberOfFrames - this.endFrames
-        }
-        newLastFrame = newLastFrame % this.numberOfFrames
-
-        const payload = {
-          frameStart: this.lastFrameRequested,
-          frameEnd: newLastFrame
-        }
-        console.log("Posting request", payload);
-        this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
-
-        if (newLastFrame >= this.numberOfFrames - this.endFrames) {
-          this.lastFrameRequested = 0
-          this.predictLoop()
-        } else {
-          this.lastFrameRequested = newLastFrame;
-        }
-
-        if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
-          // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
-          this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
+      if (!this.isWorkerBusy && this.isWorkerReady) {
+        if (this.isWorkerWaitNextLoop) {
+          this.isWorkerWaitNextLoop = false
+          this.handleNextLoop()
+        } else if (moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
+          let newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest);
+          
+          if (newLastFrame >= this.numberOfFrames - 1) {
+            newLastFrame = this.numberOfFrames - 1
+          }
+          newLastFrame = newLastFrame % this.numberOfFrames
+  
+          const payload = {
+            frameStart: this.lastFrameRequested,
+            frameEnd: newLastFrame
+          }
+          console.log("Posting request", payload);
+          this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
+          this.isWorkerBusy = true;
+  
+          if (newLastFrame >= this.numberOfFrames - 1) {
+            this.lastFrameRequested = 0
+            this.isWorkerWaitNextLoop = true
+          } else {
+            this.lastFrameRequested = newLastFrame;
+          }
+  
+          if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
+            // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
+            this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
+          }
         }
       }
     }
-
     requestAnimationFrame(() => this.bufferLoop());
   }
 
@@ -284,6 +290,7 @@ export default class Player {
           break;
         case 'framedata':
           Promise.resolve().then(() => {
+            this.isWorkerBusy = false;
             handleFrameData(e.data.payload);
           });
           break;
@@ -295,13 +302,16 @@ export default class Player {
     this.setWorker(this.manifestFilePath, this.meshFilePath)
   }
 
-  predictLoop() {
+  handleNextLoop() {
     if (this.playMode == PlayModeEnum.Random) {
       this.nextTrack = Math.floor(Math.random() * this.paths.length)
     } else if (this.playMode == PlayModeEnum.Single) {
       this.nextTrack = (this.currentTrack + 1) % this.paths.length
-      if (this.nextTrack == this.paths.length) this.nextTrack = -1
-      return
+      if ((this.currentTrack + 1) == this.paths.length) {
+        this.nextTrack = 0
+        this.isWorkerReady = false
+        return
+      }
     } else if (this.playMode == PlayModeEnum.SingleLoop) {
       this.nextTrack = this.currentTrack
     } else { //PlayModeEnum.Loop
@@ -398,7 +408,7 @@ export default class Player {
 
     this.currentFrame = frameToPlay;
 
-    if (this.currentFrame >= this.numberOfFrames - this.endFrames) {
+    if (this.currentFrame >= this.numberOfFrames - 1) {
       this.handleLoop()
     }
 
