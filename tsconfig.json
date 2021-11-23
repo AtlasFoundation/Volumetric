@@ -10,7 +10,7 @@
     "esModuleInterop": true
   },
   "include": [
-    "src/**/*"
+    "web/decoder/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

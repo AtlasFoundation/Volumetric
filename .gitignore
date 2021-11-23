@@ -139,3 +139,7 @@ unity/.DS_Store
 unity/Library
 unity/Temp
 unity/Logs
+
+
+/web/decoder/*.d.ts
+/web/decoder/*.js
