@@ -95,7 +95,7 @@ export default class Player {
         (!isOnLoop && key < this.currentFrame)) {
         // console.log("Destroying", key);
         if (buffer && buffer instanceof BufferGeometry) {
-          buffer?.dispose();
+          buffer.dispose();
         }
         this.meshBuffer.delete(key);
       }
@@ -198,13 +198,13 @@ export default class Player {
 
     this.targetFramesToRequest = targetFramesToRequest;
 
-    this._worker = worker ?? (new Worker('./workerFunction.ts')); // spawn new worker;
+    this._worker = worker ? worker : (new Worker('./workerFunction.ts')); // spawn new worker;
 
     this.scene = scene;
     this.renderer = renderer;
     this.loop = loop;
     this._scale = scale;
-    this._video = video ?? createElement('video', {
+    this._video = video ? video : createElement('video', {
       crossorigin: "",
       playsInline: "true",
       preload: "auto",
@@ -498,7 +498,7 @@ export default class Player {
   }
 
   dispose(): void {
-    this._worker?.terminate();
+    this._worker && this._worker.terminate();
     if (this._video) {
       this._video.pause();
       this._video = null;
@@ -509,7 +509,7 @@ export default class Player {
       for (let i = 0; i < this.meshBuffer.size; i++) {
         const buffer = this.meshBuffer.get(i);
         if (buffer && buffer instanceof BufferGeometry) {
-          buffer?.dispose();
+          buffer.dispose();
         }
       }
       this.meshBuffer.clear();

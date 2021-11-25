@@ -1,13 +1,27 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "declaration": true,
+    "target": "es2020",
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable"
+    ],
+    "allowJs": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": false,
+    "module": "CommonJS",
+    "strict": false,
     "noImplicitAny": false,
-    "target": "esnext",
-    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "emitDecoratorMetadata": true,
+    "declaration": true
   },
   "include": [
     "web/decoder/**/*.ts"

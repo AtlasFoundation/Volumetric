@@ -20,7 +20,6 @@
   },
   "author": "XRFoundation",
   "license": "MIT",
-  "type": "module",
   "bugs": {
     "url": "https://github.com/XRFoundation/volumetric/issues"
   },
@@ -28,7 +27,8 @@
   "devDependencies": {
     "@babel/cli": "7.16.0",
     "@babel/core": "7.16.0",
-    "@types/three": "0.134.0"
+    "@types/three": "0.134.0",
+    "typescript": "^4.5.2"
   },
   "dependencies": {
     "shelljs": "0.8.4",
