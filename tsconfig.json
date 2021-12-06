@@ -16,7 +16,6 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "sourceMap": true,
     "isolatedModules": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,

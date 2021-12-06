@@ -198,7 +198,7 @@ export default class Player {
 
     this.targetFramesToRequest = targetFramesToRequest;
 
-    this._worker = worker ? worker : (new Worker('./workerFunction.ts')); // spawn new worker;
+    this._worker = worker ? worker : (new Worker('./workerFunction.js')); // spawn new worker;
 
     this.scene = scene;
     this.renderer = renderer;
