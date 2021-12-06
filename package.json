@@ -6,12 +6,13 @@
     "url": "git://github.com/XRFoundation/volumetric.git"
   },
   "exports": {
-    "/player": {
+    "./player": {
       "default": "./dist/player.js"
     },
-    "/worker": {
+    "./worker": {
       "default": "./dist/worker.build.es.js"
-    }
+    },
+    ".": {}
   },
   "files": [
     "dist",
