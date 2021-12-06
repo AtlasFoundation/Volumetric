@@ -25,6 +25,8 @@ enum PlayModeEnum {
 }
 
 export default class Player {
+  static defaultWorkerURL = new URL('./workerFunction.js', import.meta.url)
+
   // Public Fields
   public frameRate: number = 30;
   public speed: number = 1.0; // Multiplied by framerate for final playback output rate
@@ -198,7 +200,7 @@ export default class Player {
 
     this.targetFramesToRequest = targetFramesToRequest;
 
-    this._worker = worker ? worker : (new Worker('./workerFunction.js')); // spawn new worker;
+    this._worker = worker ? worker : (new Worker(Player.defaultWorkerURL)); // spawn new worker;
 
     this.scene = scene;
     this.renderer = renderer;
