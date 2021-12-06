@@ -279,7 +279,7 @@ export default class Player {
       }
     }
 
-    worker.onmessage = (e) => {
+    this._worker.onmessage = (e) => {
       switch (e.data.type) {
         case 'initialized':
           console.log("Worker initialized");
