@@ -1,6 +1,6 @@
 {
   "name": "volumetric",
-  "version": "0.2.37",
+  "version": "0.3.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/XRFoundation/volumetric.git"
@@ -21,7 +21,7 @@
   "scripts": {
     "patch-npm": "npm version patch && npm publish --access public",
     "build": "npm run build-player && npm run build-worker",
-    "build-player":"tsc",
+    "build-player": "tsc",
     "build-worker": "vite build --config vite.worker.config.ts",
     "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
