@@ -15,7 +15,7 @@
   "jest": "ts-jest",
   "scripts": {
     "patch-npm": "npm version patch && npm publish --access public",
-    "build": "tsc",
+    "build": "tsc && tsc --project tsconfig.worker.json",
     "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
   "author": "XRFoundation",

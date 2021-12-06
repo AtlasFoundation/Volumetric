@@ -17,7 +17,7 @@ export interface IFileHeader {
 export interface KeyframeBuffer {
     keyframeNumber: number;
     frameNumber: number;
-    bufferGeometry: Buffer | BufferGeometry | null;
+    bufferGeometry: BufferGeometry | null;
 }
 
 export interface IFrameBuffer {
