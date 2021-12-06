@@ -25,7 +25,7 @@ enum PlayModeEnum {
 }
 
 export default class Player {
-  static defaultWorkerURL = new URL('./workerFunction.js', import.meta.url)
+  static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
 
   // Public Fields
   public frameRate: number = 30;
