@@ -14,7 +14,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "player.d.ts",
+    "worker.d.ts"
   ],
   "npmClient": "yarn",
   "jest": "ts-jest",
