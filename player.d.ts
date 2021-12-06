@@ -1,1 +1,2 @@
-export * from './dist/player'
+import Player from './dist/player'
+export default Player

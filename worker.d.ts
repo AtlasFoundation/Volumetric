@@ -1,1 +1,2 @@
-export * from './dist/worker'
+import Worker from './dist/worker'
+export default Worker
