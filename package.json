@@ -7,7 +7,7 @@
   },
   "exports": {
     "./player": {
-      "default": "./dist/player.js"
+      "import": "./dist/player.js"
     },
     "./worker": {
       "default": "./dist/worker.build.es.js"
