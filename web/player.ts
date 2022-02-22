@@ -26,6 +26,8 @@ enum PlayModeEnum {
 
 export default class Player {
   static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
+  //TODO: testing worker
+  // static defaultWorkerURL = new URL('../../node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
 
   // Public Fields
   public frameRate: number = 30;
@@ -34,6 +36,10 @@ export default class Player {
   public encoderWindowSize = 8; // length of the databox
   public encoderByteLength = 16;
   public videoSize = 1024;
+  public playMode: PlayModeEnum;
+  public waitForVideoLoad = 3 //3 seconds
+  public autoPreview = true
+  public hasPlayed: boolean = false;
 
   // Three objects
   public scene: Object3D;
@@ -43,7 +49,6 @@ export default class Player {
   public material: MeshBasicMaterial;
   public failMaterial: MeshBasicMaterial;
   public bufferGeometry: BufferGeometry;
-  public playMode: PlayModeEnum;
 
   // Private Fields
   private readonly _scale: number = 1;
@@ -68,8 +73,11 @@ export default class Player {
 
   private numberOfFrames: number = 0;
   private numberOfNextFrames: number = 0;
+  private isFirstLoad: boolean = true;
   private isWorkerWaitNextLoop: boolean = false;
   private isWorkerReady: boolean = false;
+  private stopOnNextTrack: boolean = false;
+  private stopOnNextFrame: boolean = false;
   private isWorkerBusy: boolean = false;
   private isVideoReady: boolean = false;
   private maxNumberOfFrames: number;
@@ -105,52 +113,49 @@ export default class Player {
 
     const minimumBufferLength = this.targetFramesToRequest * 2;
     const meshBufferHasEnoughToPlay = this.meshBuffer.size >= minimumBufferLength;
+    const meshBufferHasEnoughForSnap = this.meshBuffer.size >= minimumBufferLength * 2;
 
     if (meshBufferHasEnoughToPlay) {
       if(this.isVideoReady && this._video.paused && this.hasPlayed)
         this._video.play();
     }
-    else {
-      if (!this.isWorkerBusy && this.isWorkerReady) {
-        if (this.isWorkerWaitNextLoop) {
-          this.isWorkerWaitNextLoop = false
-          this.handleNextLoop()
-        } else if (moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
-          let newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest);
-          
-          if (newLastFrame >= this.numberOfFrames - 1) {
-            newLastFrame = this.numberOfFrames - 1
-          }
-          newLastFrame = newLastFrame % this.numberOfFrames
-  
-          const payload = {
-            frameStart: this.lastFrameRequested,
-            frameEnd: newLastFrame
-          }
-          console.log("Posting request", payload);
-          this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
-          this.isWorkerBusy = true;
-  
-          if (newLastFrame >= this.numberOfFrames - 1) {
-            this.lastFrameRequested = 0
-            this.isWorkerWaitNextLoop = true
-          } else {
-            this.lastFrameRequested = newLastFrame;
-          }
-  
-          if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
-            // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
-            this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
-          }
+    if (!this.isWorkerBusy && this.isWorkerReady && !meshBufferHasEnoughForSnap) {
+      if (this.isWorkerWaitNextLoop) {
+        this.isWorkerWaitNextLoop = false
+        this.handleNextLoop()
+      }
+      // if (moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
+      else {
+        let newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest);
+        
+        if (newLastFrame >= this.numberOfFrames - 1) {
+          newLastFrame = this.numberOfFrames - 1
+        }
+        newLastFrame = newLastFrame % this.numberOfFrames
+
+        const payload = {
+          frameStart: this.lastFrameRequested,
+          frameEnd: newLastFrame
+        }
+        console.log("Posting request", payload);
+        this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
+        this.isWorkerBusy = true;
+
+        if (newLastFrame >= this.numberOfFrames - 1) {
+          this.lastFrameRequested = 0
+          this.isWorkerWaitNextLoop = true
+        } else {
+          this.lastFrameRequested = newLastFrame;
+        }
+
+        if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
+          // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
+          this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
         }
       }
     }
     requestAnimationFrame(() => this.bufferLoop());
   }
-
-  hasPlayed = false;
-
-  stopOnNextFrame = false;
 
   constructor({
                 scene,
@@ -206,6 +211,7 @@ export default class Player {
     this.renderer = renderer;
     this.loop = loop;
     this._scale = scale;
+
     this._video = video ? video : createElement('video', {
       crossorigin: "",
       playsInline: "true",
@@ -220,15 +226,19 @@ export default class Player {
       },
       playbackRate: 1
     });
-
-    this.paths = paths
-
-    if (!playMode) this.playMode = PlayModeEnum.Loop
-
     this._video.setAttribute('crossorigin', '');
     this._video.setAttribute('preload', 'auto');
 
+    this.paths = paths
+
+    if (playMode != undefined) {
+      this.playMode = playMode
+    } else {
+      this.playMode = PlayModeEnum.Loop
+    }
+
     this.frameRate = frameRate;
+    this.isFirstLoad = true
 
     const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
     counterCanvas.width = this.encoderByteLength;
@@ -312,7 +322,7 @@ export default class Player {
       if ((this.currentTrack + 1) == this.paths.length) {
         this.nextTrack = 0
         this.isWorkerReady = false
-        return
+        this.stopOnNextTrack = true
       }
     } else if (this.playMode == PlayModeEnum.SingleLoop) {
       this.nextTrack = this.currentTrack
@@ -332,6 +342,9 @@ export default class Player {
     this.currentTrack = this.nextTrack
     this.setVideo(this.videoFilePath)
     this.hasPlayed = true;
+    if (this.stopOnNextTrack) {
+      this.paused = true
+    }
   }
 
   setTrackPath(track) {
@@ -351,7 +364,14 @@ export default class Player {
     this._video.setAttribute('src', videoFilePath);
     this._video.load()
     this._video.addEventListener('loadeddata', (event) => {
-      this.isVideoReady = true
+      setTimeout(() => {
+        this.isVideoReady = true;
+        //TODO: show the first frame when init
+        if (this.isFirstLoad && this.autoPreview) {
+          this.isFirstLoad = false
+          this.playOneFrame()
+        }
+      }, this.waitForVideoLoad * 1000)
     });
   }
 
@@ -489,11 +509,16 @@ export default class Player {
   // Start loop to check if we're ready to play
   play() {
     this.hasPlayed = true;
+    this.stopOnNextTrack = false
     this._video.playsInline = true;
     this.mesh.visible = true
     this._video.play()
   }
 
+  pause() {
+    this.paused = true
+  }
+  
   playOneFrame() {
     this.stopOnNextFrame = true;
     this.play();
