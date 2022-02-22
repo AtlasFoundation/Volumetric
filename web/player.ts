@@ -37,6 +37,7 @@ export default class Player {
   public videoSize = 1024;
   public playMode: PlayModeEnum;
   public waitForVideoLoad = 3 //3 seconds
+  public autoPreview = true
   public hasPlayed: boolean = false;
 
   // Three objects
@@ -71,6 +72,7 @@ export default class Player {
 
   private numberOfFrames: number = 0;
   private numberOfNextFrames: number = 0;
+  private isFirstLoad: boolean = true;
   private isWorkerWaitNextLoop: boolean = false;
   private isWorkerReady: boolean = false;
   private stopOnNextTrack: boolean = false;
@@ -208,6 +210,7 @@ export default class Player {
     this.renderer = renderer;
     this.loop = loop;
     this._scale = scale;
+
     this._video = video ? video : createElement('video', {
       crossorigin: "",
       playsInline: "true",
@@ -222,6 +225,8 @@ export default class Player {
       },
       playbackRate: 1
     });
+    this._video.setAttribute('crossorigin', '');
+    this._video.setAttribute('preload', 'auto');
 
     this.paths = paths
 
@@ -231,10 +236,8 @@ export default class Player {
       this.playMode = PlayModeEnum.Loop
     }
 
-    this._video.setAttribute('crossorigin', '');
-    this._video.setAttribute('preload', 'auto');
-
     this.frameRate = frameRate;
+    this.isFirstLoad = true
 
     const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
     counterCanvas.width = this.encoderByteLength;
@@ -362,7 +365,12 @@ export default class Player {
     this._video.addEventListener('loadeddata', (event) => {
       setTimeout(() => {
         this.isVideoReady = true;
-    }, this.waitForVideoLoad * 1000)
+        //TODO: show the first frame when init
+        if (this.isFirstLoad && this.autoPreview) {
+          this.isFirstLoad = false
+          this.playOneFrame()
+        }
+      }, this.waitForVideoLoad * 1000)
     });
   }
 
