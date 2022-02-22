@@ -37,6 +37,7 @@ export default class Player {
   public videoSize = 1024;
   public playMode: PlayModeEnum;
   public waitForVideoLoad = 3 //3 seconds
+  public hasPlayed: boolean = false;
 
   // Three objects
   public scene: Object3D;
@@ -72,6 +73,8 @@ export default class Player {
   private numberOfNextFrames: number = 0;
   private isWorkerWaitNextLoop: boolean = false;
   private isWorkerReady: boolean = false;
+  private stopOnNextTrack: boolean = false;
+  private stopOnNextFrame: boolean = false;
   private isWorkerBusy: boolean = false;
   private isVideoReady: boolean = false;
   private maxNumberOfFrames: number;
@@ -151,10 +154,6 @@ export default class Player {
     requestAnimationFrame(() => this.bufferLoop());
   }
 
-  hasPlayed = false;
-
-  stopOnNextFrame = false;
-
   constructor({
                 scene,
                 renderer,
@@ -226,7 +225,11 @@ export default class Player {
 
     this.paths = paths
 
-    if (!playMode) this.playMode = PlayModeEnum.Loop
+    if (playMode != undefined) {
+      this.playMode = playMode
+    } else {
+      this.playMode = PlayModeEnum.Loop
+    }
 
     this._video.setAttribute('crossorigin', '');
     this._video.setAttribute('preload', 'auto');
@@ -315,7 +318,7 @@ export default class Player {
       if ((this.currentTrack + 1) == this.paths.length) {
         this.nextTrack = 0
         this.isWorkerReady = false
-        return
+        this.stopOnNextTrack = true
       }
     } else if (this.playMode == PlayModeEnum.SingleLoop) {
       this.nextTrack = this.currentTrack
@@ -335,6 +338,9 @@ export default class Player {
     this.currentTrack = this.nextTrack
     this.setVideo(this.videoFilePath)
     this.hasPlayed = true;
+    if (this.stopOnNextTrack) {
+      this.paused = true
+    }
   }
 
   setTrackPath(track) {
@@ -494,11 +500,16 @@ export default class Player {
   // Start loop to check if we're ready to play
   play() {
     this.hasPlayed = true;
+    this.stopOnNextTrack = false
     this._video.playsInline = true;
     this.mesh.visible = true
     this._video.play()
   }
 
+  pause() {
+    this.paused = true
+  }
+  
   playOneFrame() {
     this.stopOnNextFrame = true;
     this.play();
