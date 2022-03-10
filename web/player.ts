@@ -13,10 +13,6 @@ import {
 } from 'three';
 import { moduloBy, createElement } from './utils';
 
-type AdvancedHTMLVideoElement = HTMLVideoElement & { requestVideoFrameCallback: (callback: (number, { }) => void) => void };
-type onMeshBufferingCallback = (progress: number) => void;
-type onFrameShowCallback = (frame: number) => void;
-type onRenderingCallback = () => void;
 enum PlayModeEnum {
   Single = 1,
   Random,
@@ -24,10 +20,42 @@ enum PlayModeEnum {
   SingleLoop,
 }
 
+enum VideoStatusEnum {
+  Wait = "wait",
+  Set = "set",
+  Loaded = "loaded",
+  InitPlay = "initplay",
+  Ready = "ready",
+}
+
+
+enum PlayerEventEnum {
+  PlayerReady = "playerready",
+  WorkerReady = "workerReady",
+  WorkerFrameData = "workerframedata",
+  WorkerPostRequest = "workerpostrequest",
+  Buffering = "buffering",
+  SetWorker = "setWorker",
+  NextLoop = "nextloop",
+  Loop = "loop",
+  SetTrack = "settrack",
+  VideoStatus = "videostatus",
+  FrameUpdate = "frameupdate",
+  Play = "play",
+  Pause = "pause",
+  Seek = "seek"
+}
+
+type AdvancedHTMLVideoElement = HTMLVideoElement & { requestVideoFrameCallback: (callback: (number, { }) => void) => void };
+type onMeshBufferingCallback = (progress: number) => void;
+type onFrameShowCallback = (frame: number) => void;
+type onHandleEventCallback = (type: PlayerEventEnum, data?: any) => void;
+type onRenderingCallback = () => void
+
 export default class Player {
-  static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
+  // static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
   //TODO: testing worker
-  // static defaultWorkerURL = new URL('../../node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
+  static defaultWorkerURL = new URL('../../../XREngine/node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
 
   // Public Fields
   public frameRate: number = 30;
@@ -58,6 +86,7 @@ export default class Player {
   private _worker: Worker;
   private onMeshBuffering: onMeshBufferingCallback | null = null;
   private onFrameShow: onFrameShowCallback | null = null;
+  private onHandleEvent: onHandleEventCallback | null = null;
   private rendererCallback: onRenderingCallback | null = null;
   fileHeader: any;
   tempBufferObject: BufferGeometry;
@@ -79,7 +108,7 @@ export default class Player {
   private stopOnNextTrack: boolean = false;
   private stopOnNextFrame: boolean = false;
   private isWorkerBusy: boolean = false;
-  private isVideoReady: boolean = false;
+  private videoStatus: VideoStatusEnum;
   private maxNumberOfFrames: number;
   private actorCanvas: HTMLCanvasElement;
   currentFrame: number = 0;
@@ -116,13 +145,28 @@ export default class Player {
     const meshBufferHasEnoughForSnap = this.meshBuffer.size >= minimumBufferLength * 2;
 
     if (meshBufferHasEnoughToPlay) {
-      if(this.isVideoReady && this._video.paused && this.hasPlayed)
+      if (this.videoStatus == VideoStatusEnum.Loaded) {
+        if (this.mesh.material && this.currentFrame > 0) {
+          this.pause()
+          this.mesh.visible = true
+          this.videoStatus = VideoStatusEnum.InitPlay
+          if (typeof this.onHandleEvent == 'function') {
+            this.onHandleEvent(PlayerEventEnum.VideoStatus, {
+              status: this.videoStatus,
+              video: this._video
+            })
+          }
+        }
+      } else if(this.videoStatus == VideoStatusEnum.Ready && this._video.paused && this.hasPlayed) {
+        this.mesh.visible = true
         this._video.play();
+      }
     }
+
     if (!this.isWorkerBusy && this.isWorkerReady && !meshBufferHasEnoughForSnap) {
       if (this.isWorkerWaitNextLoop) {
         this.isWorkerWaitNextLoop = false
-        this.handleNextLoop()
+        this.prepareNextLoop()
       }
       // if (moduloBy(this.lastFrameRequested - this.currentFrame, this.numberOfFrames) <= minimumBufferLength * 2) {
       else {
@@ -138,6 +182,9 @@ export default class Player {
           frameEnd: newLastFrame
         }
         console.log("Posting request", payload);
+        if (typeof this.onHandleEvent == 'function') {
+          this.onHandleEvent(PlayerEventEnum.WorkerPostRequest, payload)
+        }
         this._worker.postMessage({ type: "request", payload }); // Send data to our worker.
         this.isWorkerBusy = true;
 
@@ -150,6 +197,9 @@ export default class Player {
 
         if (!meshBufferHasEnoughToPlay && typeof this.onMeshBuffering === "function") {
           // console.log('buffering ', this.meshBuffer.size / minimumBufferLength,',  have: ', this.meshBuffer.size, ', need: ', minimumBufferLength )
+          if (typeof this.onHandleEvent == 'function') {
+            this.onHandleEvent(PlayerEventEnum.Buffering, this.meshBuffer.size / minimumBufferLength)
+          }
           this.onMeshBuffering(this.meshBuffer.size / minimumBufferLength);
         }
       }
@@ -172,6 +222,7 @@ export default class Player {
                 video = null,
                 onMeshBuffering = null,
                 onFrameShow = null,
+                onHandleEvent = null,
                 rendererCallback = null,
                 worker = null
               }: {
@@ -190,12 +241,14 @@ export default class Player {
     videoSize?: number,
     onMeshBuffering?: onMeshBufferingCallback
     onFrameShow?: onFrameShowCallback,
+    onHandleEvent?: onHandleEventCallback,
     rendererCallback?: onRenderingCallback,
     worker?: Worker
   }) {
 
     this.onMeshBuffering = onMeshBuffering;
     this.onFrameShow = onFrameShow;
+    this.onHandleEvent = onHandleEvent;
     this.rendererCallback = rendererCallback;
 
     this.encoderWindowSize = encoderWindowSize;
@@ -224,10 +277,23 @@ export default class Player {
         left: '0',
         width: '1px'
       },
-      playbackRate: 1
+      playbackRate: 1,
+      // autoplay: "autoplay",
+      muted: "muted",
     });
     this._video.setAttribute('crossorigin', '');
     this._video.setAttribute('preload', 'auto');
+    this._video.setAttribute('playsInline', 'playsInline');
+    this._video.setAttribute('muted', 'muted');
+    // this._video.setAttribute('autoplay', 'autoplay');
+
+    this.videoStatus = VideoStatusEnum.Wait
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.VideoStatus, {
+        status: this.videoStatus,
+        video: this._video
+      })
+    }
 
     this.paths = paths
 
@@ -296,6 +362,9 @@ export default class Player {
         case 'initialized':
           console.log("Worker initialized");
           this.isWorkerReady = true
+          if (typeof this.onHandleEvent == 'function') {
+            this.onHandleEvent(PlayerEventEnum.WorkerReady)
+          }
           Promise.resolve().then(() => {
             this.bufferLoop();
           });
@@ -304,6 +373,9 @@ export default class Player {
           Promise.resolve().then(() => {
             this.isWorkerBusy = false;
             handleFrameData(e.data.payload);
+            if (typeof this.onHandleEvent == 'function') {
+              this.onHandleEvent(PlayerEventEnum.WorkerFrameData, e.data.payload)
+            }
           });
           break;
       }
@@ -312,9 +384,12 @@ export default class Player {
     this.setTrackPath(this.currentTrack)
     this.setVideo(this.videoFilePath)
     this.setWorker(this.manifestFilePath, this.meshFilePath)
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.PlayerReady, this)
+    }
   }
 
-  handleNextLoop() {
+  prepareNextLoop() {
     if (this.playMode == PlayModeEnum.Random) {
       this.nextTrack = Math.floor(Math.random() * this.paths.length)
     } else if (this.playMode == PlayModeEnum.Single) {
@@ -331,6 +406,12 @@ export default class Player {
     }
     this.setTrackPath(this.nextTrack)
     this.setWorker(this.manifestFilePath, this.meshFilePath)
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.NextLoop, {
+        currentTrack: this.currentTrack,
+        nextTrack: this.nextTrack
+      })
+    }
   }
 
   handleLoop() {
@@ -345,6 +426,11 @@ export default class Player {
     if (this.stopOnNextTrack) {
       this.paused = true
     }
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.Loop, {
+        currentTrack: this.currentTrack
+      })
+    }
   }
 
   setTrackPath(track) {
@@ -352,26 +438,69 @@ export default class Player {
     this.meshFilePath = meshFilePath
     this.manifestFilePath = `${meshFilePath.substring(0, meshFilePath.lastIndexOf("."))}.manifest`
     this.videoFilePath = `${meshFilePath.substring(0, meshFilePath.lastIndexOf("."))}.mp4`
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.SetTrack, {
+        meshFilePath: this.meshFilePath,
+        manifestFilePath: this.manifestFilePath,
+        videoFilePath: this.videoFilePath,
+      })
+    }
   }
 
   setVideo(videoFilePath) {
-    this.isVideoReady = false
     if (!this._video.paused) {
+      this.mesh.visible = false
       this._video.pause();
       this.hasPlayed = false;
       this.stopOnNextFrame = false;
     }
+
+    this.videoStatus = VideoStatusEnum.Set
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.VideoStatus, {
+        status: this.videoStatus,
+        videoFilePath
+      })
+    }
+
     this._video.setAttribute('src', videoFilePath);
     this._video.load()
+
     this._video.addEventListener('loadeddata', (event) => {
       setTimeout(() => {
-        this.isVideoReady = true;
         //TODO: show the first frame when init
-        if (this.isFirstLoad && this.autoPreview) {
-          this.isFirstLoad = false
-          this.playOneFrame()
+        if (typeof this.onHandleEvent == 'function') {
+          this.videoStatus = VideoStatusEnum.Loaded
+          this.onHandleEvent(PlayerEventEnum.VideoStatus, {
+            status: this.videoStatus,
+            video: this._video
+          })
+        } else {
+          this.videoStatus = VideoStatusEnum.Ready
         }
+        if (!this.isFirstLoad) this.play()
       }, this.waitForVideoLoad * 1000)
+    });
+
+    this._video.addEventListener('play', () => {
+      this.isFirstLoad = false
+      // if (this.videoStatus == VideoStatusEnum.Loaded) {
+      //   if (this.mesh.material != this.failMaterial) {
+      //     this.videoStatus = VideoStatusEnum.InitPlay
+      //     this.pause()
+      //   }
+      // } else {
+      //   if (this.videoStatus != VideoStatusEnum.Ready && !this._video.paused) {
+      //     this.pause()
+      //   }
+      // }
+
+      // if (typeof this.onHandleEvent == 'function') {
+      //   this.onHandleEvent(PlayerEventEnum.VideoStatus, {
+      //     status: this.videoStatus,
+      //     video: this._video
+      //   })
+      // }
     });
   }
 
@@ -396,6 +525,9 @@ export default class Player {
 
     xhr.open('GET', manifestFilePath, true); // true for asynchronous
     xhr.send();
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.SetWorker, this._worker)
+    }
   }
 
   /**
@@ -466,6 +598,9 @@ export default class Player {
       if (typeof this.onFrameShow === "function") {
         this.onFrameShow(frameToPlay);
       }
+      if (typeof this.onHandleEvent == 'function') {
+        this.onHandleEvent(PlayerEventEnum.FrameUpdate, frameToPlay)
+      }
       if(this.rendererCallback) this.rendererCallback();
       if(cb) cb();
     }
@@ -507,21 +642,38 @@ export default class Player {
   }
 
   // Start loop to check if we're ready to play
-  play() {
+  play(mute?: boolean) {
     this.hasPlayed = true;
     this.stopOnNextTrack = false
-    this._video.playsInline = true;
-    this.mesh.visible = true
+    this._video.muted = mute
+    if (this.videoStatus == VideoStatusEnum.Ready) {
+      this.mesh.visible = true
+    } else {
+      this.mesh.visible = false
+    }
     this._video.play()
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.Play)
+    }
   }
 
   pause() {
     this.paused = true
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.Pause)
+    }
   }
   
   playOneFrame() {
     this.stopOnNextFrame = true;
     this.play();
+    if (typeof this.onHandleEvent == 'function') {
+      this.onHandleEvent(PlayerEventEnum.Seek)
+    }
+  }
+
+  updateStatus (status) {
+    this.videoStatus = status
   }
 
   dispose(): void {
