@@ -52,9 +52,9 @@ type onHandleEventCallback = (type: PlayerEventEnum, data?: any) => void;
 type onRenderingCallback = () => void
 
 export default class Player {
-  // static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
+  static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
   //TODO: testing worker
-  static defaultWorkerURL = new URL('../../../XREngine/node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
+  // static defaultWorkerURL = new URL('../../../XREngine/node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
 
   // Public Fields
   public frameRate: number = 30;
