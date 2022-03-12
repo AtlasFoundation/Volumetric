@@ -26,11 +26,8 @@ You will need a mesh and texture sequence in OBJ/PNG or OBJ/PLY.
 Encoded .uvol files are cross platform, but currently the decoder is written for the web only. Want Unity, Unreal, examples in PlayCanvas and Babylon, etc? Submit and issue and sponsor our project:
 https://opencollective.com/xrengine
 
-Or you can get in touch with the maintainer directly for any questions about who, what, where and how:
-shawmakesmagic@gmail.com
-
 Or find us on Discord!
-https://discord.gg/2amVGBE3a3
+https://discord.gg/xrf
 
 ## Encoding
 
