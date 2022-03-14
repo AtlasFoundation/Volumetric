@@ -11,7 +11,6 @@ import {
   Uint32BufferAttribute,
   WebGLRenderer
 } from 'three';
-import { moduloBy, createElement } from './utils';
 
 enum PlayModeEnum {
   Single = 1,
@@ -125,7 +124,7 @@ export default class Player {
     }
   }
 
-  get video():any {
+  get video() {
     return this._video;
   }
 
@@ -189,17 +188,12 @@ export default class Player {
     this.prevMeshBufferHasEnough = false
     
     //create video element
-    this._video = video ? video : createElement('video', {
-      crossorigin: "",
-      playsInline: "true",
-      preload: "auto",
-      playbackRate: 1,
-      muted: "muted",
-    });
-    this._video.setAttribute('crossorigin', '');
-    this._video.setAttribute('preload', 'auto');
-    this._video.setAttribute('playsInline', 'playsInline');
-    this._video.setAttribute('muted', 'muted');
+    this._video = video ? video : document.createElement('video')
+    this._video.crossOrigin = 'anonymous'
+    this._video.playbackRate = 1
+    this._video.playsInline = true
+    this._video.preload = 'auto'
+    this._video.muted = true
 
     //handle video event
     this._video.addEventListener('loadeddata', (event) => {
@@ -224,6 +218,10 @@ export default class Player {
     this._video.addEventListener('ended', () => {
       this.handleLoop()
     });
+    
+    // if ('requestVideoFrameCallback' in this._video) {
+    //   this._video.requestVideoFrameCallback(this.onRequestVideoFrame)
+    // }
 
 
     //create canvas
