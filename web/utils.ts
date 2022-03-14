@@ -10,8 +10,4 @@ const applyElementArguments = (el: any, args: any) => {
   return el;
 };
 
-export const createElement = (type: string, args: any) => {
-  return isWebWorker ? document.createElement(type, args) : applyElementArguments(document.createElement(type), args);
-};
-
 export const moduloBy = (number, modulo) => (number + modulo) % modulo;
