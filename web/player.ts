@@ -196,6 +196,7 @@ export default class Player {
     this._video.playsInline = true
     this._video.preload = 'auto'
     this._video.muted = true
+    this.isLoadingEffect = isLoadingEffect
 
     //handle video event
     this._video.addEventListener('loadeddata', (event) => {
@@ -341,7 +342,7 @@ export default class Player {
   /**
    * sync mesh frame to video texture frame
    */
-   processFrame() {
+  processFrame() {
     const frameToPlay = this.getCurrentFrameNumber();
 
     if (frameToPlay > this.numberOfFrames) {
@@ -443,7 +444,6 @@ export default class Player {
     if (this.stopOnNextTrack) {
       this.stopOnNextTrack = false
       this.hasPlayed = false
-      debugger
       return
     }
     if (this.numberOfNextFrames != 0) this.numberOfFrames = this.numberOfNextFrames
@@ -575,7 +575,7 @@ export default class Player {
   }
 
   handleInitPlay() {
-    this.paused = true
+    this.pause()
     this.mesh.visible = true
     this.videoStatus = VideoStatusEnum.InitPlay
     this.sendHandleEvent(PlayerEventEnum.VideoStatus, { status: this.videoStatus, video: this._video })
