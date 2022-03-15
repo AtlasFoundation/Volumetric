@@ -24,7 +24,7 @@ enum VideoStatusEnum {
   Set = "set",
   Loaded = "loaded",
   InitPlay = "initplay",
-  Ready = "ready",
+  Ready = "ready"
 }
 
 enum PlayerEventEnum {
@@ -65,6 +65,7 @@ export default class Player {
   public playMode: PlayModeEnum;
   public waitForVideoLoad = 3 //3 seconds
   public autoPreview = true
+  public isLoadingEffect = true
   public hasPlayed: boolean = false;
 
   // Three objects
@@ -97,7 +98,6 @@ export default class Player {
   private videoFilePath: any;
   private counterCtx: CanvasRenderingContext2D;
   private actorCtx: CanvasRenderingContext2D;
-  private timer: any
 
   private numberOfFrames: number = 0;
   private numberOfNextFrames: number = 0;
@@ -105,7 +105,6 @@ export default class Player {
   private isWorkerWaitNextLoop: boolean = false;
   private isWorkerReady: boolean = false;
   private isWorkerBusy: boolean = false;
-  private prevMeshBufferHasEnough: boolean = false;
   private stopOnNextTrack: boolean = false;
   private stopOnNextFrame: boolean = false;
   private videoStatus: VideoStatusEnum;
@@ -116,10 +115,11 @@ export default class Player {
   targetFramesToRequest: number = 30;
 
   set paused(value){
-    if(!value) this.play();
+    if(!value && this._video.paused) this.play();
     else {
-      this._video.pause();
-      this.hasPlayed = false;
+      if (!this._video.paused) {
+        this._video.pause();
+      }
       this.stopOnNextFrame = false;
     }
   }
@@ -140,6 +140,7 @@ export default class Player {
     encoderByteLength = 16,
     videoSize = 1024,
     video = null,
+    isLoadingEffect = false,
     onMeshBuffering = null,
     onFrameShow = null,
     onHandleEvent = null,
@@ -157,6 +158,7 @@ export default class Player {
     encoderByteLength?: number,
     videoSize?: number,
     video?: any,
+    isLoadingEffect?: boolean,
     onMeshBuffering?: onMeshBufferingCallback
     onFrameShow?: onFrameShowCallback,
     onHandleEvent?: onHandleEventCallback,
@@ -185,7 +187,6 @@ export default class Player {
 
     this.paths = paths
     this.playMode = playMode || PlayModeEnum.Loop
-    this.prevMeshBufferHasEnough = false
     
     //create video element
     this._video = video ? video : document.createElement('video')
@@ -197,32 +198,35 @@ export default class Player {
 
     //handle video event
     this._video.addEventListener('loadeddata', (event) => {
-      this.timer = setTimeout(() => {
-        //TODO: show the first frame when init
-        if (typeof this.onHandleEvent == 'function') {
-          this.videoStatus = VideoStatusEnum.Loaded
-          this.sendHandleEvent(PlayerEventEnum.VideoStatus, { status: this.videoStatus, video: this._video })
-        } else {
-          this.videoStatus = VideoStatusEnum.Ready
-        }
-        if (!this.isFirstLoad) this.play()
-        clearTimeout(this.timer)
-      }, this.waitForVideoLoad * 1000)
-      console.log('loadeddata')
-    });
-
-    this._video.addEventListener('play', () => {
-      this.isFirstLoad = false
+      if (this.isLoadingEffect) {
+        this.videoStatus = VideoStatusEnum.Loaded
+        this.sendHandleEvent(PlayerEventEnum.VideoStatus, { status: this.videoStatus, video: this._video })
+      } else {
+        this.videoStatus = VideoStatusEnum.Ready
+      }
+      if (!this.isFirstLoad) this.play()
     });
 
     this._video.addEventListener('ended', () => {
       this.handleLoop()
     });
-    
-    // if ('requestVideoFrameCallback' in this._video) {
-    //   this._video.requestVideoFrameCallback(this.onRequestVideoFrame)
-    // }
 
+    this._video.addEventListener('play', () => {
+      this.isFirstLoad = false
+    });
+    
+    const handleVideoFrame = () => {
+      if (this.videoStatus != VideoStatusEnum.InitPlay) {
+        this.processFrame()
+        this.removePlayedBuffer()
+      }
+      //@ts-ignore
+      this._video.requestVideoFrameCallback(handleVideoFrame)
+    }
+    
+    if ('requestVideoFrameCallback' in this._video) {
+      this._video.requestVideoFrameCallback(handleVideoFrame)
+    }
 
     //create canvas
     const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
@@ -363,21 +367,6 @@ export default class Player {
     const meshBufferHasEnoughToPlay = this.meshBuffer.size >= minimumBufferLength;
     const meshBufferHasEnoughForSnap = this.meshBuffer.size >= minimumBufferLength * 2;
 
-    const isOnLoop = this.lastFrameRequested < this.currentFrame;
-    
-    //remove played buffer
-    for (const [key, buffer] of this.meshBuffer.entries()) {
-      // If key is between current keyframe and last requested, don't delete
-      if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame)) ||
-        (!isOnLoop && key < this.currentFrame)) {
-        // console.log("Destroying", key);
-        if (buffer && buffer instanceof BufferGeometry) {
-          buffer.dispose();
-        }
-        this.meshBuffer.delete(key);
-      }
-    }
-
     if (!this.isWorkerBusy && this.isWorkerReady && !meshBufferHasEnoughForSnap) {
       if (!this.isWorkerWaitNextLoop) {
         let newLastFrame = Math.max(this.lastFrameRequested + minimumBufferLength, this.lastFrameRequested + this.targetFramesToRequest);
@@ -417,7 +406,7 @@ export default class Player {
 
     if (this.videoStatus == VideoStatusEnum.Ready) {
       //play only when buffer goes to fill to enough
-      if(!this.prevMeshBufferHasEnough && meshBufferHasEnoughToPlay && this._video.paused && this.hasPlayed) {
+      if(meshBufferHasEnoughToPlay && this._video.paused && this.hasPlayed) {
         this.play();
       }
     } else if (this.videoStatus == VideoStatusEnum.Loaded) {
@@ -425,8 +414,7 @@ export default class Player {
         this.handleInitPlay()
       }
     }
-    
-    this.prevMeshBufferHasEnough = meshBufferHasEnoughToPlay
+
     requestAnimationFrame(() => this.bufferLoop());
   }
 
@@ -492,24 +480,9 @@ export default class Player {
   }
 
   /**
-   * emulated video frame callback
-   * bridge from video.timeupdate event to videoUpdateHandler
-   * @param cb
-   */
-  handleRender(cb?: onRenderingCallback) {
-    if (!this.fileHeader) // || (this._video.currentTime === 0 || this._video.paused))
-      return;
-
-    // TODO: handle paused state
-    this.processFrame(cb);
-  }
-
-  /**
    * sync mesh frame to video texture frame
-   * calls this.rendererCallback and provided callback if frame is changed and render needs update
-   * @param cb
    */
-  processFrame(cb?: onRenderingCallback) {
+  processFrame() {
     const frameToPlay = this.getCurrentFrameNumber();
 
     if (frameToPlay > this.numberOfFrames) {
@@ -523,21 +496,16 @@ export default class Player {
 
     this.currentFrame = frameToPlay;
 
-    if (this.stopOnNextFrame) {
-      this.paused = true
-    }
-
     const hasFrame = this.meshBuffer.has(frameToPlay);
-    // If keyframe changed, set mesh buffer to new keyframe
 
-    if (!hasFrame) {
+    if (!hasFrame || this.stopOnNextFrame) {
       if (!this._video.paused) {
         this.paused = true
       }
-      if (typeof this.onMeshBuffering === "function") {
+      if (!hasFrame && typeof this.onMeshBuffering === "function") {
         this.onMeshBuffering(0);
+        this.mesh.material = this.failMaterial;
       }
-      this.mesh.material = this.failMaterial;
     } else {
       this.mesh.material = this.material;
       this.material.needsUpdate = true;
@@ -555,15 +523,31 @@ export default class Player {
       }
       this.sendHandleEvent(PlayerEventEnum.FrameUpdate, frameToPlay)
       if(this.rendererCallback) this.rendererCallback();
-      if(cb) cb();
+    }
+  }
+
+  removePlayedBuffer() {
+    const isOnLoop = this.lastFrameRequested < this.currentFrame;
+    
+    //remove played buffer
+    for (const [key, buffer] of this.meshBuffer.entries()) {
+      // If key is between current keyframe and last requested, don't delete
+      if ((isOnLoop && (key > this.lastFrameRequested && key < this.currentFrame)) ||
+        (!isOnLoop && key < this.currentFrame)) {
+        // console.log("Destroying", key);
+        if (buffer && buffer instanceof BufferGeometry) {
+          buffer.dispose();
+        }
+        this.meshBuffer.delete(key);
+      }
     }
   }
 
   // Start loop to check if we're ready to play
   play(mute?: boolean) {
+    this.hasPlayed = true
     if (this.videoStatus != VideoStatusEnum.Loaded
         && this.videoStatus != VideoStatusEnum.Ready) return
-    this.hasPlayed = true;
     this.stopOnNextTrack = false
     this._video.muted = mute
     if (this.videoStatus == VideoStatusEnum.Ready) {
@@ -578,6 +562,7 @@ export default class Player {
   pause() {
     if (this.videoStatus == VideoStatusEnum.InitPlay) return
     this.paused = true
+    this.hasPlayed = false
     this.sendHandleEvent(PlayerEventEnum.Pause)
   }
   
