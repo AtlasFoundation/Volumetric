@@ -217,10 +217,13 @@ export default class Player {
       this.isFirstLoad = false
     });
     
-    const handleVideoFrame = () => {
+    const handleVideoFrame = (now, metadata) => {
+      console.log(metadata)
       if (this.videoStatus != VideoStatusEnum.InitPlay) {
-        this.processFrame()
+        const currentFrame = metadata.mediaTime * this.frameRate
+        this.processFrame(parseInt(currentFrame.toFixed(0)))
         this.removePlayedBuffer()
+        this._videoTexture.needsUpdate = true;
       }
       //@ts-ignore
       this._video.requestVideoFrameCallback(handleVideoFrame)
@@ -231,22 +234,22 @@ export default class Player {
     }
 
     //create canvas
-    const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
-    counterCanvas.width = this.encoderByteLength;
-    counterCanvas.height = 1;
+    // const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
+    // counterCanvas.width = this.encoderByteLength;
+    // counterCanvas.height = 1;
 
-    this.counterCtx = counterCanvas.getContext('2d');
-    this.actorCanvas = document.createElement('canvas')
-    this.actorCtx = this.actorCanvas.getContext('2d');
+    // this.counterCtx = counterCanvas.getContext('2d');
+    // this.actorCanvas = document.createElement('canvas')
+    // this.actorCtx = this.actorCanvas.getContext('2d');
 
-    this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
-    this.counterCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
-    this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
+    // this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
+    // this.counterCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
+    // this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
 
-    this.actorCtx.fillStyle = '#ACC';
-    this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
+    // this.actorCtx.fillStyle = '#ACC';
+    // this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
 
-    this._videoTexture = new Texture(this.actorCtx.canvas);
+    this._videoTexture = new Texture(this.video);
     this._videoTexture.encoding = sRGBEncoding;
     this.material = new MeshBasicMaterial({ map: this._videoTexture });
 
@@ -342,8 +345,7 @@ export default class Player {
   /**
    * sync mesh frame to video texture frame
    */
-  processFrame() {
-    const frameToPlay = this.getCurrentFrameNumber();
+  processFrame(frameToPlay) {
 
     if (frameToPlay > this.numberOfFrames) {
       console.warn('video texture is not ready? frameToPlay:', frameToPlay);
