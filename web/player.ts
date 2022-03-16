@@ -57,7 +57,6 @@ export default class Player {
   // static defaultWorkerURL = new URL('../../../node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
 
   // Public Fields
-  public frameRate: number = 30;
   public speed: number = 1.0; // Multiplied by framerate for final playback output rate
   public loop: boolean = true;
   public encoderWindowSize = 8; // length of the databox
@@ -94,6 +93,7 @@ export default class Player {
   private meshFilePath: String;
 
   private currentTrack: number = 0;
+  private frameData: Array<any>;
   private nextTrack: number = 0;
   private manifestFilePath: any;
   private videoFilePath: any;
@@ -111,6 +111,8 @@ export default class Player {
   private videoStatus: VideoStatusEnum;
   private maxNumberOfFrames: number;
   private actorCanvas: HTMLCanvasElement;
+  private useVideoRequest: boolean = false;
+  private defaultFrameRate: number = 30
   currentFrame: number = 0;
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
@@ -135,7 +137,6 @@ export default class Player {
     playMode,
     paths,
     targetFramesToRequest = 90,
-    frameRate = 30,
     scale = 1,
     encoderWindowSize = 8,
     encoderByteLength = 16,
@@ -153,7 +154,6 @@ export default class Player {
     playMode?: PlayModeEnum,
     paths: Array<String>,
     targetFramesToRequest?: number,
-    frameRate?: number,
     scale?: number,
     encoderWindowSize?: number,
     encoderByteLength?: number,
@@ -184,7 +184,7 @@ export default class Player {
     this.scene = scene;
     this.renderer = renderer;
     this._scale = scale;
-    this.frameRate = frameRate;
+    this.frameData = []
 
     this.paths = paths
     this.playMode = playMode || PlayModeEnum.Loop
@@ -216,43 +216,56 @@ export default class Player {
     this._video.addEventListener('play', () => {
       this.isFirstLoad = false
     });
-    
+
     const handleVideoFrame = (now, metadata) => {
-      console.log(metadata)
-      if (this.videoStatus != VideoStatusEnum.InitPlay) {
-        const currentFrame = metadata.mediaTime * this.frameRate
-        this.processFrame(parseInt(currentFrame.toFixed(0)))
+      if (this.videoStatus != VideoStatusEnum.InitPlay && !this.video.paused && this.hasPlayed) {
+        const frameData = this.frameData.filter((rate) => rate.track == this.currentTrack)
+        let frameRate = this.defaultFrameRate
+        if (frameData && frameData[0]) {
+          frameRate = frameData[0].frameRate
+        }
+        const currentFrame = Math.round(metadata.mediaTime * frameRate)
+        this.processFrame(currentFrame)
         this.removePlayedBuffer()
         this._videoTexture.needsUpdate = true;
       }
+      
       //@ts-ignore
       this._video.requestVideoFrameCallback(handleVideoFrame)
     }
     
     if ('requestVideoFrameCallback' in this._video) {
       this._video.requestVideoFrameCallback(handleVideoFrame)
+      this.useVideoRequest = true
+    } else {
+      this.useVideoRequest = false
     }
 
-    //create canvas
-    // const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
-    // counterCanvas.width = this.encoderByteLength;
-    // counterCanvas.height = 1;
+    //set video texture
+    if (this.useVideoRequest) {
+      this._videoTexture = new Texture(this._video);
+    } else {
+      //create canvas
+      const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
+      counterCanvas.width = this.encoderByteLength;
+      counterCanvas.height = 1;
 
-    // this.counterCtx = counterCanvas.getContext('2d');
-    // this.actorCanvas = document.createElement('canvas')
-    // this.actorCtx = this.actorCanvas.getContext('2d');
+      this.counterCtx = counterCanvas.getContext('2d');
+      this.actorCanvas = document.createElement('canvas')
+      this.actorCtx = this.actorCanvas.getContext('2d');
 
-    // this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
-    // this.counterCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
-    // this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
+      this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
+      this.counterCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
+      this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
 
-    // this.actorCtx.fillStyle = '#ACC';
-    // this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
+      this.actorCtx.fillStyle = '#ACC';
+      this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
 
-    this._videoTexture = new Texture(this.video);
+      this._videoTexture = new Texture(this.actorCtx.canvas);
+    }
+    
     this._videoTexture.encoding = sRGBEncoding;
     this.material = new MeshBasicMaterial({ map: this._videoTexture });
-
     this.failMaterial = new MeshBasicMaterial({ color: '#555555' });
     this.mesh = new Mesh(new PlaneBufferGeometry(0.00001, 0.00001), this.material);
     this.mesh.scale.set(this._scale, this._scale, this._scale);
@@ -345,7 +358,7 @@ export default class Player {
   /**
    * sync mesh frame to video texture frame
    */
-  processFrame(frameToPlay) {
+  processFrame(frameToPlay, cb?: onRenderingCallback) {
 
     if (frameToPlay > this.numberOfFrames) {
       console.warn('video texture is not ready? frameToPlay:', frameToPlay);
@@ -385,6 +398,7 @@ export default class Player {
       }
       this.sendHandleEvent(PlayerEventEnum.FrameUpdate, frameToPlay)
       if(this.rendererCallback) this.rendererCallback();
+      if(cb) cb();
     }
   }
 
@@ -513,7 +527,17 @@ export default class Player {
     xhr.onreadystatechange = () => {
       if (xhr.readyState !== 4) return;
       this.fileHeader = JSON.parse(xhr.responseText);
-      this.frameRate = this.fileHeader.frameRate;
+      
+      const frameRate = this.fileHeader.frameRate
+      const index = this.frameData.indexOf((rate) => rate.track == this.nextTrack)
+      if (index == -1) {
+        this.frameData.push({
+          track: this.nextTrack,
+          frameRate 
+        })
+      } else {
+        this.frameData[index].frameRate = frameRate
+      }
 
       // Get count of frames associated with keyframe
       this.numberOfNextFrames = this.fileHeader.frameData.length;
@@ -591,6 +615,13 @@ export default class Player {
     if (typeof this.onHandleEvent == 'function') {
       this.onHandleEvent(type, data)
     }
+  }
+
+  handleRender(cb?: onRenderingCallback) {
+    if (!this.fileHeader || this.useVideoRequest) // || (this._video.currentTime === 0 || this._video.paused))
+      return;
+    const frameToPlay = this.getCurrentFrameNumber();
+    this.processFrame(frameToPlay, cb);
   }
 
   dispose(): void {
