@@ -7,9 +7,11 @@ import {
   PlaneBufferGeometry,
   Renderer,
   sRGBEncoding,
+  VideoTexture,
   Texture,
   Uint32BufferAttribute,
-  WebGLRenderer
+  WebGLRenderer,
+  LinearFilter
 } from 'three';
 
 enum PlayModeEnum {
@@ -49,6 +51,49 @@ type onMeshBufferingCallback = (progress: number) => void;
 type onFrameShowCallback = (frame: number) => void;
 type onHandleEventCallback = (type: PlayerEventEnum, data?: any) => void;
 type onRenderingCallback = () => void
+
+class CustomVideoTexture extends Texture {
+
+	constructor( video ) {
+
+		super( video );
+
+		this.minFilter = LinearFilter;
+		this.magFilter = LinearFilter;
+
+		this.generateMipmaps = false;
+
+		const scope = this;
+
+		function updateVideo() {
+
+			scope.needsUpdate = true;
+			video.requestVideoFrameCallback( updateVideo );
+
+		}
+
+		if ( 'requestVideoFrameCallback' in video ) {
+
+			video.requestVideoFrameCallback( updateVideo );
+
+		}
+
+	}
+
+	update() {
+
+		const video = this.image;
+		const hasVideoFrameCallback = 'requestVideoFrameCallback' in video;
+
+		if ( hasVideoFrameCallback === false && video.readyState >= video.HAVE_CURRENT_DATA ) {
+
+			this.needsUpdate = true;
+
+		}
+
+	}
+
+}
 
 export default class Player {
   static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
@@ -116,6 +161,7 @@ export default class Player {
   currentFrame: number = 0;
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
+  prevMaterials = []
 
   set paused(value){
     if(!value && this._video.paused) this.play();
@@ -216,20 +262,44 @@ export default class Player {
     this._video.addEventListener('play', () => {
       this.isFirstLoad = false
     });
+    let counter = 0
 
     const handleVideoFrame = (now, metadata) => {
+      // console.error("now: ", now, "expectedDisplayTime: ", metadata.expectedDisplayTime)
       if (this.videoStatus != VideoStatusEnum.InitPlay && !this.video.paused && this.hasPlayed) {
         const frameData = this.frameData.filter((rate) => rate.track == this.currentTrack)
         let frameRate = this.defaultFrameRate
         if (frameData && frameData[0]) {
           frameRate = frameData[0].frameRate
         }
-        const currentFrame = Math.round(metadata.mediaTime * frameRate)
-        this.processFrame(currentFrame)
-        this.removePlayedBuffer()
-        this._videoTexture.needsUpdate = true;
+        const frameToPlay = Math.round(metadata.mediaTime * frameRate)
+        const delay = metadata.expectedDisplayTime - now
+        if (delay > -16 && this.currentFrame !== frameToPlay) {
+          counter++
+          this._videoTexture.needsUpdate = true;
+          // this.prevMaterials.push({
+          //   // material: this.material.clone(),
+          //   // videoTexture: this._videoTexture.clone(),
+          //   frameToPlay,
+          //   presentedFrames: metadata.presentedFrames,
+          //   presentationTime: metadata.presentationTime,
+          //   expectedDisplayTime: metadata.expectedDisplayTime,
+          //   now,
+          // })
+          this.processFrame(frameToPlay)
+          this.removePlayedBuffer()
+          document.getElementById("counter").innerHTML = `
+          counter: ${counter} &#10;
+          frameToPlay: ${frameToPlay}&#10;
+          presentedFrames: ${metadata.presentedFrames}&#10;
+          expectedDisplayTime - now: ${metadata.expectedDisplayTime - now}&#10;
+          presentationTime - now: ${metadata.presentationTime - now}&#10;
+          presentationTime - expectedDisplayTime: ${metadata.presentationTime - metadata.expectedDisplayTime} &#10;
+          processingDuration: ${metadata.processingDuration}&#10;
+          mediaTime: ${metadata.mediaTime}&#10;
+          `
+        }
       }
-      
       //@ts-ignore
       this._video.requestVideoFrameCallback(handleVideoFrame)
     }
@@ -243,7 +313,10 @@ export default class Player {
 
     //set video texture
     if (this.useVideoRequest) {
-      this._videoTexture = new Texture(this._video);
+      this._videoTexture = new VideoTexture(this._video);
+      this._videoTexture.minFilter = LinearFilter;
+      this._videoTexture.magFilter = LinearFilter;
+      this._videoTexture.generateMipmaps = false;
     } else {
       //create canvas
       const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
@@ -347,7 +420,7 @@ export default class Player {
         this.play();
       }
     } else if (this.videoStatus == VideoStatusEnum.Loaded) {
-      if (meshBufferHasEnoughToPlay && this.hasPlayed && this.mesh.material && this.currentFrame > 0) {
+      if (meshBufferHasEnoughToPlay && this.hasPlayed && this.mesh.material && this.currentFrame > 5) {
         this.handleInitPlay()
       }
     }
@@ -390,8 +463,6 @@ export default class Player {
       this.mesh.geometry = this.meshBuffer.get(frameToPlay) as BufferGeometry;
       this.mesh.geometry.attributes.position.needsUpdate = true;
       (this.mesh.geometry as any).needsUpdate = true;
-
-      this.currentFrame = frameToPlay;
 
       if (typeof this.onFrameShow === "function") {
         this.onFrameShow(frameToPlay);
@@ -516,8 +587,6 @@ export default class Player {
 
     frameToPlay = Math.max(frameToPlay - 1, 0);
 
-    this._videoTexture.needsUpdate = this.currentFrame !== frameToPlay;
-
     return frameToPlay;
   }
 
@@ -621,6 +690,7 @@ export default class Player {
     if (!this.fileHeader || this.useVideoRequest) // || (this._video.currentTime === 0 || this._video.paused))
       return;
     const frameToPlay = this.getCurrentFrameNumber();
+    this._videoTexture.needsUpdate = this.currentFrame !== frameToPlay;
     this.processFrame(frameToPlay, cb);
   }
 
