@@ -114,10 +114,10 @@ export default class Player {
   private actorCanvas: HTMLCanvasElement;
   private useVideoRequest: boolean = false;
   private defaultFrameRate: number = 30
+  private pastTextureUpdateTime: number = 0
   currentFrame: number = 0;
   lastFrameRequested: number = 0;
   targetFramesToRequest: number = 30;
-  prevMaterials = []
 
   set paused(value){
     if(!value && this._video.paused) this.play();
@@ -194,7 +194,7 @@ export default class Player {
     //create video element
     this._video = video ? video : document.createElement('video')
     this._video.crossOrigin = 'anonymous'
-    this._video.playbackRate = 1
+    this._video.playbackRate = this.speed
     this._video.playsInline = true
     this._video.preload = 'auto'
     this._video.muted = true
@@ -218,72 +218,47 @@ export default class Player {
     this._video.addEventListener('play', () => {
       this.isFirstLoad = false
     });
-    let counter = 0
-    let startTime = 0
-    let offset = 0
+
     const handleVideoFrame = (now, metadata) => {
-      // console.error("now: ", now, "expectedDisplayTime: ", metadata.expectedDisplayTime)
       if (this.videoStatus != VideoStatusEnum.InitPlay && !this.video.paused && this.hasPlayed) {
+        this._video.playbackRate = this.speed
         const frameData = this.frameData.filter((rate) => rate.track == this.currentTrack)
         let frameRate = this.defaultFrameRate
         if (frameData && frameData[0]) {
           frameRate = frameData[0].frameRate
         }
-        
-        if (startTime == 0) {
-          startTime = now
-        }
-
-        this._video.playbackRate = 1.5
-        let offset = this.video.duration / (this.numberOfFrames)
-
-        const FRAME = 1 / frameRate
-        const FRAME_WINDOW_LOWER = FRAME * 0.95;
-        const FRAME_WINDOW_UPPER = FRAME * 0.75;
-        
-        const mediaFrameTime = metadata.mediaTime * frameRate
         const frameToPlay = Math.round(metadata.mediaTime * frameRate)
-        const frameToPlay2 = Math.round(this.video.currentTime * frameRate)
-        const frameToPlay3 = Math.round(metadata.mediaTime / offset)
-        let frameToPlay4 = Math.floor(metadata.mediaTime * frameRate)
-
-        
         const delay = metadata.expectedDisplayTime - now
-
-        if (mediaFrameTime - frameToPlay4 > FRAME_WINDOW_LOWER) {
-          frameToPlay4 = frameToPlay4 + 1
-        }
-
-
-        if (frameToPlay != frameToPlay2 ) {
-          // console.error(counter)
-        }
-        
         if (this.currentFrame !== frameToPlay) {
-          counter++
           this._videoTexture.needsUpdate = true;
-         
-          document.getElementById("counter").innerHTML = `
-          counter: ${counter}&#10;
-          mediaTime: ${metadata.mediaTime}&#10;
-          mediaFrameTime: ${mediaFrameTime}&#10;
-          frameRate: ${frameRate}&#10;
-          frameToPlay: ${frameToPlay}&#10;
-          frameToPlay2: ${frameToPlay2}&#10;
-          frameToPlay3: ${frameToPlay3}&#10;
-          frameToPlay4: ${frameToPlay4}&#10;
-          FRAME: ${FRAME}&#10;
-          presentedFrames: ${metadata.presentedFrames}&#10;
-          expectedDisplayTime - now: ${metadata.expectedDisplayTime - now}&#10;
-          currentFrame - presentedFrames: ${this.currentFrame - metadata.presentedFrames}&#10;
-          currentFrame - frameToPlay: ${this.currentFrame - frameToPlay}&#10;
-          processingDuration: ${metadata.processingDuration}&#10;
-          `
-          
-          this.processFrame(frameToPlay)
-          this.removePlayedBuffer()
-        } else {
-          console.error("duplicate")
+
+          // Should read this: https://github.com/WICG/video-rvfc/issues/77#issuecomment-879317525
+
+          //https://web.dev/requestvideoframecallback-rvfc/
+          //https://github.com/WICG/video-rvfc/issues/59
+          // The mediaTime corresponds to the presentation timestamp of latest frame sent to
+          // the browser compositor, and we get the timestamp from the media itself.
+          // The rvfc callback can be 1 v-sync late, so there can be a small window where the
+          // last mediaTime you received does not correspond exactly to what is on screen.
+          // However, drift issues of more than 1 (maybe 2?) frames might come from the
+          // media's encoding itself.
+          // You can check whether the frame is already on screen, or is about to be on screen,
+          // using the expectedDisplayTime and seeing if it's approximately now (within 10 microseconds),
+          // or roughly 1 v-sync in the future (~16ms for a 60 hz monitor).
+
+          if (delay < 16) { // in the case of 1 vsync late
+            // https://github.com/WICG/video-rvfc/issues/59#issuecomment-729280461
+            // speed down for internal state stabilized (strategy)
+            this._video.playbackRate = 0.5
+            setTimeout(() => {
+              this._video.playbackRate = this.speed
+            }, 10)
+            // give browser enough time to stabilize
+            this.processFrame(frameToPlay)
+          } else {
+            this.processFrame(frameToPlay)
+          }
+          this.pastTextureUpdateTime = now
         }
       }
       //@ts-ignore
@@ -303,6 +278,18 @@ export default class Player {
       this._videoTexture.minFilter = LinearFilter;
       this._videoTexture.magFilter = LinearFilter;
       this._videoTexture.generateMipmaps = false;
+      
+      // this.actorCanvas = document.createElement('canvas')
+      // this.actorCtx = this.actorCanvas.getContext('2d');
+
+      // this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
+      // this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
+
+      // this.actorCtx.fillStyle = '#ACC';
+      // this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
+
+      // this._videoTexture = new Texture(this.actorCtx.canvas);
+
     } else {
       //create canvas
       const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
@@ -410,7 +397,6 @@ export default class Player {
         this.handleInitPlay()
       }
     }
-
     requestAnimationFrame(() => this.bufferLoop());
   }
 
@@ -445,8 +431,9 @@ export default class Player {
       this.material.needsUpdate = true;
 
       this.mesh.material.needsUpdate = true;
-
       this.mesh.geometry = this.meshBuffer.get(frameToPlay) as BufferGeometry;
+      //test code
+      // this.mesh.geometry = new PlaneBufferGeometry(1, 1)
       this.mesh.geometry.attributes.position.needsUpdate = true;
       (this.mesh.geometry as any).needsUpdate = true;
 
@@ -457,6 +444,7 @@ export default class Player {
       if(this.rendererCallback) this.rendererCallback();
       if(cb) cb();
     }
+    this.removePlayedBuffer()
   }
 
   prepareNextLoop() {
@@ -541,6 +529,8 @@ export default class Player {
 
   setVideo(videoFilePath) {
     this.pause(true)
+    //test code
+    // videoFilePath = 'https://daiz.github.io/frame-accurate-ish/time.mp4'
     this._video.setAttribute('src', videoFilePath);
     this._video.load()
     this.videoStatus = VideoStatusEnum.Set
