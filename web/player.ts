@@ -52,10 +52,10 @@ type onHandleEventCallback = (type: PlayerEventEnum, data?: any) => void;
 type onRenderingCallback = () => void
 
 export default class Player {
-  // static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
+  static defaultWorkerURL = new URL('./worker.build.es.js', import.meta.url).href
   //TODO: testing worker
   // static defaultWorkerURL = new URL('../../../XREngine/node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
-  static defaultWorkerURL = new URL('../../../node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
+  // static defaultWorkerURL = new URL('../../../node_modules/volumetric/dist/worker.build.es.js', import.meta.url).href
 
   // Public Fields
   public speed: number = 1.0; // Multiplied by framerate for final playback output rate
@@ -232,10 +232,14 @@ export default class Player {
         if (this.currentFrame !== frameToPlay) {
           this._videoTexture.needsUpdate = true;
 
-          // Should read this: https://github.com/WICG/video-rvfc/issues/77#issuecomment-879317525
-
-          //https://web.dev/requestvideoframecallback-rvfc/
-          //https://github.com/WICG/video-rvfc/issues/59
+          // Should read this: 
+          // https://web.dev/requestvideoframecallback-rvfc/
+          // Current issue
+          // https://github.com/WICG/video-rvfc/issues/59
+          // https://github.com/WICG/video-rvfc/issues/77#issuecomment-879317525
+          // https://github.com/WICG/video-rvfc/issues/65#issuecomment-997811461
+          // https://github.com/WICG/video-rvfc/issues/63#issuecomment-700140698
+          
           // The mediaTime corresponds to the presentation timestamp of latest frame sent to
           // the browser compositor, and we get the timestamp from the media itself.
           // The rvfc callback can be 1 v-sync late, so there can be a small window where the
