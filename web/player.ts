@@ -8,6 +8,7 @@ import {
   Renderer,
   sRGBEncoding,
   Texture,
+  VideoTexture,
   Uint32BufferAttribute,
   WebGLRenderer,
   LinearFilter
@@ -67,6 +68,7 @@ export default class Player {
   public waitForVideoLoad = 3 //3 seconds
   public autoPreview = true
   public isLoadingEffect = false
+  public isVideoTexture = false
   public hasPlayed: boolean = false;
 
   // Three objects
@@ -145,6 +147,7 @@ export default class Player {
     videoSize = 1024,
     video = null,
     isLoadingEffect = false,
+    isVideoTexture = false,
     onMeshBuffering = null,
     onFrameShow = null,
     onHandleEvent = null,
@@ -162,6 +165,7 @@ export default class Player {
     videoSize?: number,
     video?: any,
     isLoadingEffect?: boolean,
+    isVideoTexture?: boolean,
     onMeshBuffering?: onMeshBufferingCallback
     onFrameShow?: onFrameShowCallback,
     onHandleEvent?: onHandleEventCallback,
@@ -199,6 +203,7 @@ export default class Player {
     this._video.preload = 'auto'
     this._video.muted = true
     this.isLoadingEffect = isLoadingEffect
+    this.isVideoTexture = isVideoTexture
 
     //handle video event
     this._video.addEventListener('loadeddata', (event) => {
@@ -230,6 +235,9 @@ export default class Player {
         const frameToPlay = Math.round(metadata.mediaTime * frameRate)
         const delay = metadata.expectedDisplayTime - now
         if (this.currentFrame !== frameToPlay) {
+          if (!this.isVideoTexture) {
+            this.actorCtx.drawImage(this._video, 0, 0);
+          }
           this._videoTexture.needsUpdate = true;
 
           // Should read this: 
@@ -278,22 +286,20 @@ export default class Player {
 
     //set video texture
     if (this.useVideoRequest) {
-      this._videoTexture = new Texture(this._video);
-      this._videoTexture.minFilter = LinearFilter;
-      this._videoTexture.magFilter = LinearFilter;
-      this._videoTexture.generateMipmaps = false;
-      
-      // this.actorCanvas = document.createElement('canvas')
-      // this.actorCtx = this.actorCanvas.getContext('2d');
+      if (this.isVideoTexture) {
+        this._videoTexture = new VideoTexture(this._video);
+      } else {
+        this.actorCanvas = document.createElement('canvas')
+        this.actorCtx = this.actorCanvas.getContext('2d');
 
-      // this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
-      // this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
+        this.actorCtx.canvas.width = this.actorCtx.canvas.height = this.videoSize;
+        this.actorCtx.canvas.setAttribute('crossOrigin', 'Anonymous');
 
-      // this.actorCtx.fillStyle = '#ACC';
-      // this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
+        this.actorCtx.fillStyle = '#ACC';
+        this.actorCtx.fillRect(0, 0, this.actorCtx.canvas.width, this.actorCtx.canvas.height);
 
-      // this._videoTexture = new Texture(this.actorCtx.canvas);
-
+        this._videoTexture = new Texture(this.actorCtx.canvas);
+      }
     } else {
       //create canvas
       const counterCanvas = document.createElement('canvas') as HTMLCanvasElement;
