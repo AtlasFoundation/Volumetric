@@ -515,7 +515,6 @@ export default class Player {
     if (this.stopOnNextTrack) {
       this.stopOnNextTrack = false
       this.hasPlayed = false
-      return
     }
     if (this.numberOfNextFrames != 0) this.numberOfFrames = this.numberOfNextFrames
     this.currentTrack = this.nextTrack
