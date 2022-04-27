@@ -261,10 +261,10 @@ export default class Player {
           if (delay < 16) { // in the case of 1 vsync late
             // https://github.com/WICG/video-rvfc/issues/59#issuecomment-729280461
             // speed down for internal state stabilized (strategy)
-            this._video.playbackRate = 0.5
-            setTimeout(() => {
-              this._video.playbackRate = this.speed
-            }, 10)
+            // this._video.playbackRate = 0.5
+            // setTimeout(() => {
+            //   // this._video.playbackRate = this.speed
+            // }, 10)
             // give browser enough time to stabilize
             this.processFrame(frameToPlay)
           } else {
