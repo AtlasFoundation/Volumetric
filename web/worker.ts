@@ -46,7 +46,9 @@ function startHandlerLoop({
           }
         }).catch(err => { console.error("WORKERERROR: ", err) });
 
-        const buffer = await (response as Response).arrayBuffer().catch(err => { console.error("Weird error", err) });
+        const buffer = await (response as Response).arrayBuffer()
+
+        const transferables = []
         for (let i = frameStart; i <= frameEnd; i++) {
           const currentFrameData = _fileHeader.frameData[i];
 
@@ -57,6 +59,9 @@ function startHandlerLoop({
           const slice = (buffer as ArrayBuffer).slice(fileReadStartPosition, fileReadEndPosition);
           const decoder = new CortoDecoder(slice);
           const bufferGeometry = decoder.decode();
+          transferables.push(bufferGeometry.index.buffer);
+          transferables.push(bufferGeometry.position.buffer);
+          transferables.push(bufferGeometry.uv.buffer);
 
           // Add to the messageQueue
           outgoingMessages.push({
@@ -65,7 +70,7 @@ function startHandlerLoop({
             bufferGeometry
           });
         }
-        (globalThis as any).postMessage({ type: 'framedata', payload: outgoingMessages }); 
+        (globalThis as any).postMessage({ type: 'framedata', payload: outgoingMessages }, transferables); 
       } catch (error) {
         (globalThis as any).postMessage({ type: 'framedata', payload: [] });
         console.error("WORKERERROR: ", error, frameStart, frameEnd)

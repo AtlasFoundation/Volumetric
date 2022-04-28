@@ -9,9 +9,8 @@ import {
   sRGBEncoding,
   Texture,
   VideoTexture,
-  Uint32BufferAttribute,
   WebGLRenderer,
-  LinearFilter
+  Uint16BufferAttribute
 } from 'three';
 
 enum PlayModeEnum {
@@ -485,15 +484,15 @@ export default class Player {
     for (const frameData of messages) {
       let geometry = new BufferGeometry();
       geometry.setIndex(
-        new Uint32BufferAttribute(frameData.bufferGeometry.index, 1)
+        new Uint16BufferAttribute(frameData.bufferGeometry.index.buffer, 1)
       );
       geometry.setAttribute(
         'position',
-        new Float32BufferAttribute(frameData.bufferGeometry.position, 3)
+        new Float32BufferAttribute(frameData.bufferGeometry.position.buffer, 3)
       );
       geometry.setAttribute(
         'uv',
-        new Float32BufferAttribute(frameData.bufferGeometry.uv, 2)
+        new Float32BufferAttribute(frameData.bufferGeometry.uv.buffer, 2)
       );
 
       this.meshBuffer.set(frameData.keyframeNumber, geometry );
