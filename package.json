@@ -35,8 +35,8 @@
   },
   "homepage": "https://github.com/XRFoundation/volumetric#readme",
   "devDependencies": {
-    "@babel/cli": "7.17.6",
-    "@babel/core": "7.17.8",
+    "@babel/cli": "7.17.10",
+    "@babel/core": "7.17.10",
     "@types/three": "0.140.0",
     "typescript": "4.6.3"
   },
