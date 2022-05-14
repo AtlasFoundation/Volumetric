@@ -24,10 +24,7 @@ For decoding, currently WebGL is supported (especially three.js), Unreal and Uni
 You will need a mesh and texture sequence in OBJ/PNG or OBJ/PLY.
 
 Encoded .uvol files are cross platform, but currently the decoder is written for the web only. Want Unity, Unreal, examples in PlayCanvas and Babylon, etc? Submit and issue and sponsor our project:
-https://opencollective.com/xrengine
-
-Or find us on Discord!
-https://discord.gg/xrf
+https://opencollective.com/atlasfoundation
 
 ## Encoding
 

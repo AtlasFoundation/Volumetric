@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected void init()
     {
-        view.init("liam.manifest", R.raw.liam, R.raw.liamt);
+        view.init("test.manifest", R.raw.test, R.raw.testt);
         getLifecycle().addObserver(view.getLifeCycleObserver());
     }
 

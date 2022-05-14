@@ -285,7 +285,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   videoPlayer: {fileID: 861664337}
-  pathToFile: liam.uvol
+  pathToFile: test.uvol
   isStreamingAssets: 1
 --- !u!4 &861664339
 Transform:

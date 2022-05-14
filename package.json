@@ -1,9 +1,9 @@
 {
   "name": "volumetric",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "repository": {
     "type": "git",
-    "url": "git://github.com/XRFoundation/volumetric.git"
+    "url": "git://github.com/atlasfoundation/volumetric.git"
   },
   "exports": {
     "./player": {
@@ -28,12 +28,12 @@
     "build-worker": "vite build --config vite.worker.config.ts",
     "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
-  "author": "XRFoundation",
+  "author": "Atlas Foundation",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/XRFoundation/volumetric/issues"
+    "url": "https://github.com/atlasfoundation/volumetric/issues"
   },
-  "homepage": "https://github.com/XRFoundation/volumetric#readme",
+  "homepage": "https://github.com/atlasfoundation/volumetric#readme",
   "devDependencies": {
     "@babel/cli": "7.17.10",
     "@babel/core": "7.17.10",
