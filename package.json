@@ -1,6 +1,6 @@
 {
   "name": "volumetric",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "repository": {
     "type": "git",
     "url": "git://github.com/atlasfoundation/volumetric.git"
@@ -15,6 +15,7 @@
     ".": {}
   },
   "files": [
+    "src",
     "dist",
     "player.d.ts",
     "worker.d.ts"
@@ -26,7 +27,7 @@
     "build": "npm run build-player && npm run build-worker",
     "build-player": "tsc",
     "build-worker": "vite build --config vite.worker.config.ts",
-    "corto": "babel ./web/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
+    "corto": "babel ./src/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
   },
   "author": "Atlas Foundation",
   "license": "MIT",
