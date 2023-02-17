@@ -1,6 +1,6 @@
 # Universal Volumetric
 
-The open source Universal Volumetric (".uvol") compressed interchange format for streaming mesh sequences. This project also includes a cross-platform player implementation using h.264 video for texture.
+The open source Universal Volumetric (".uvol") compressed interchange format for streaming mesh sequences. This project  includes a cross-platform player implementation using h.264 video for texture encoding and Draco and Corto compression for GLTF 3D model.
 
 The initial version focuses on performance. Currently, single material mesh sequences of any length are supported. The next version will focus on higher compression ratio, streamability and integration into USD and glTF.
 
@@ -10,7 +10,9 @@ The current implementation uses the MIT-licensed Corto codec from CNR-ISTI Visua
 If you are proficient in C++, python, JS, Unity/C#, or you want to support this project creatively or financially, please get in touch!
 
 ### Example
-This tech was built in partnership with Wild Capture and others. You can see an example on Wild Capture's site, here: http://wildcapture.co/volumetric.html
+This tech was built in partnership with Wild Capture and others. 
+
+You can see an example on Wild Capture's site, here: http://wildcapture.co/volumetric.html
 
 Current uvol files consist of a .uvol binary, manifest file and video texture. Future versions will embed everything into the uvol binary or in a single MP4 container.
 
@@ -23,8 +25,7 @@ For decoding, currently WebGL is supported (especially three.js), Unreal and Uni
 
 You will need a mesh and texture sequence in OBJ/PNG or OBJ/PLY.
 
-Encoded .uvol files are cross platform, but currently the decoder is written for the web only. Want Unity, Unreal, examples in PlayCanvas and Babylon, etc? Submit and issue and sponsor our project:
-https://opencollective.com/atlasfoundation
+Encoded .uvol files are cross platform, but currently the decoder is written for the web only.
 
 ## Encoding
 
@@ -63,4 +64,3 @@ python3 src/encoder/texture_encoder.py
 ```bash
 ffmpeg -r 30 -s 1024x1024 -i src/encoder/encode/tex%05d.png -vcodec libx264 -crf 25 example.mp4
 ```
-

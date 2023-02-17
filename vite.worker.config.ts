@@ -7,7 +7,7 @@ export default defineConfig({
     lib: {
       fileName: 'worker.build',
       formats: ['es'],
-      entry: 'src/worker.ts'
+      entry: 'web/worker.ts'
     },
 
     emptyOutDir: false

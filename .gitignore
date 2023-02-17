@@ -144,5 +144,3 @@ unity/Logs
 /web/decoder/*.d.ts
 /web/decoder/*.js
 /web/decoder/*.js.map
-yarn.lock
-package-lock.json

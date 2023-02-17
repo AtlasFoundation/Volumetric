@@ -7,7 +7,7 @@ export default defineConfig({
       lib: {
         fileName: 'player',
         formats: ['es'],
-        entry: 'src/player.ts',
+        entry: 'web/player.ts',
       }, 
       
       rollupOptions: {

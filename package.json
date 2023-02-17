@@ -1,21 +1,20 @@
 {
   "name": "volumetric",
-  "version": "0.6.4",
+  "version": "1.0.11",
   "repository": {
     "type": "git",
-    "url": "git://github.com/atlasfoundation/volumetric.git"
+    "url": "git://github.com/AtlasFoundation/Volumetric.git"
   },
   "exports": {
     "./player": {
       "import": "./dist/player.js"
     },
     "./worker": {
-      "default": "./dist/worker.build.es.js"
+      "default": "./dist/worker.js"
     },
     ".": {}
   },
   "files": [
-    "src",
     "dist",
     "player.d.ts",
     "worker.d.ts"
@@ -27,23 +26,31 @@
     "build": "npm run build-player && npm run build-worker",
     "build-player": "tsc",
     "build-worker": "vite build --config vite.worker.config.ts",
-    "corto": "babel ./src/libs/cortodecoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd"
+    "encode": "babel ./encoder/Encoder.js --out-file corto.js --plugins @babel/plugin-transform-modules-umd",
+    "format": "prettier --write \"web/*.{ts,tsx}\"",
+    "format-staged": "lint-staged",
+    "lint": "prettier --check \"web/*.{ts,tsx}\""
   },
-  "author": "Atlas Foundation",
+  "pre-commit": [
+    "format-staged"
+  ],
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write"
+    ]
+  },
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/atlasfoundation/volumetric/issues"
-  },
-  "homepage": "https://github.com/atlasfoundation/volumetric#readme",
   "devDependencies": {
-    "@babel/cli": "7.17.10",
-    "@babel/core": "7.17.10",
-    "@types/three": "0.140.0",
-    "typescript": "4.6.4"
+    "@babel/cli": "7.20.7",
+    "@babel/core": "7.20.12",
+    "@types/three": "0.149.0",
+    "@ianvs/prettier-plugin-sort-imports": "3.7.1",
+    "prettier": "2.8.4",
+    "typescript": "4.9.5"
   },
   "dependencies": {
     "shelljs": "0.8.5",
-    "vite": "^2.6.14",
+    "vite": "^4.0.0",
     "xmlhttprequest": "1.8.0"
   },
   "peerDependencies": {
